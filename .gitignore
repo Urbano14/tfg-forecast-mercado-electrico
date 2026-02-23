@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Envs
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Logs / data temporales
+*.log
+
+# Datos
+data/
+*.csv
+*.parquet
+*.pkl
+
+# Modelos entrenados
+models/
+*.h5
+*.pt
+*.ckpt
