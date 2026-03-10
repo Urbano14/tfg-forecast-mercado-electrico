@@ -19,7 +19,7 @@ def mae(y_true, y_pred) -> float:
 def rmse(y_true, y_pred) -> float:
     """
     Root Mean Squared Error (RMSE).
-    Penaliza más los errores grandes (por el cuadrado).
+    Devuelve la raíz del error cuadrático medio en las mismas unidades que la variable (€/MWh).
     """
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
@@ -30,9 +30,3 @@ def rmse(y_true, y_pred) -> float:
     return float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
 
 
-if __name__ == "__main__":
-    # Ejemplo de uso
-    yt = [1, 2, 3]
-    yp = [2, 2, 4]
-    print("MAE:", mae(yt, yp))   
-    print("RMSE:", rmse(yt, yp)) 

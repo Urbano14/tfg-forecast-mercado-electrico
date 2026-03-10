@@ -15,10 +15,3 @@ def temporal_split(df: pd.DataFrame):
     test = df[df["timestamp"].dt.year == 2024]
     return train.reset_index(drop=True), val.reset_index(drop=True), test.reset_index(drop=True)
 
-if __name__ == "__main__":
-    df = load_data()
-    train, val, test = temporal_split(df)
-
-    print("Train:", train.shape, "|", train["timestamp"].min(), "->", train["timestamp"].max())
-    print("Val:  ", val.shape,   "|", val["timestamp"].min(),   "->", val["timestamp"].max())
-    print("Test: ", test.shape,  "|", test["timestamp"].min(),  "->", test["timestamp"].max())

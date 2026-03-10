@@ -9,12 +9,12 @@ from src.modelos.naive import NaiveModel
 from src.modelos.seasonal_naive import SeasonalNaiveModel
 
 
-RESULTS_PATH = Path("results/baselines_results.csv")
-RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+RESULTS_PATH = Path("results/baselines_results.csv") # Path donde se guardarán los resultados de las evaluaciones de los modelos.
+RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True) # Crear el directorio "results" si no existe.
 
-
-def run_one(name: str, model, series, dataset_name: str, horizon=24, stride=24):
-    res = rolling_origin_backtest(
+# Función para ejecutar un modelo específico en una serie temporal dada y evaluar su rendimiento utilizando backtesting.
+def run_one(name: str, model, series, dataset_name: str, horizon=24, stride=24): 
+    res = rolling_origin_backtest( 
         series=series,
         model=model,
         horizon=horizon,
@@ -38,7 +38,7 @@ def run_one(name: str, model, series, dataset_name: str, horizon=24, stride=24):
         "rmse": res.rmse,
     }
 
-
+# Función principal que carga los datos, realiza la división temporal, ejecuta los modelos de referencia y guarda los resultados en un archivo CSV.
 def main():
     df = load_data()
     train, val, test = temporal_split(df)

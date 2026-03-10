@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, Iterable, Optional
+from typing import Protocol, Optional
 
 import numpy as np
 import pandas as pd
@@ -11,16 +11,32 @@ from src.evaluation.metrics import mae, rmse
 
 class ForecastModel(Protocol):
     """
-    Interfaz mínima que deben cumplir nuestros modelos para ser evaluados.
+    Interfaz mínima que debe cumplir cualquier modelo para poder evaluarse
+    con este motor de backtesting.
 
-    Dado un histórico de precios (1D) devuelve una predicción de longitud horizon.
+    La idea es simple:
+    - el modelo recibe un histórico de precios
+    - el modelo devuelve una predicción de longitud 'horizon'
+
+    Da igual si el modelo es Naive, Seasonal Naive, lineal o XGBoost:
+    mientras tenga este método forecast(...), el backtesting podrá usarlo.
     """
     def forecast(self, history: np.ndarray, horizon: int) -> np.ndarray:
         ...
+        # Cada modelo concreto implementará aquí su lógica de predicción.
 
 
 @dataclass
 class BacktestResult:
+    """
+    Objeto sencillo para devolver el resultado final del backtesting.
+
+    Guarda:
+    - cuántos orígenes de predicción se han evaluado
+    - qué horizonte se usó
+    - qué stride se usó
+    - las métricas agregadas finales (MAE y RMSE)
+    """
     n_origins: int
     horizon: int
     stride: int
@@ -37,65 +53,99 @@ def rolling_origin_backtest(
     end_index: Optional[int] = None,
 ) -> BacktestResult:
     """
-    Backtesting tipo rolling origin sobre una serie univariante.
+    Evalúa un modelo sobre una serie temporal usando rolling origin backtesting.
 
-    - series: pd.Series indexada por timestamp o por índice (valores numéricos)
-    - model: implementa forecast(history, horizon)
-    - horizon: pasos a predecir (24h)
-    - stride: cuánto avanzamos el origen cada iteración (24h = diario)
-    - start_index/end_index: para acotar (en índice posicional). end_index es exclusivo.
+    Idea general:
+    - tomamos un punto t como "momento actual"
+    - damos al modelo todo lo anterior a t como histórico
+    - le pedimos que prediga las próximas 'horizon' horas
+    - comparamos con lo que realmente pasó
+    - avanzamos el origen y repetimos
 
-    Evalúa:
-      Para cada origen t:
-        history = series[:t]
-        y_true = series[t : t+horizon]
-        y_pred = model.forecast(history, horizon)
+    Esto simula el uso real del modelo en forecasting:
+    en cada momento solo conoce el pasado, nunca el futuro.
     """
-    y = series.astype(float).to_numpy()
 
+
+    y = series.astype(float).to_numpy() 
+
+    
     n = len(y)
     if n < horizon + 10:
         raise ValueError(f"Serie demasiado corta ({n}) para horizon={horizon}")
 
-    # Por defecto: empezamos después de la primera semana (24*7=168h) para dar margen al modelo
+    # Si no se especifica desde dónde empezar, empezamos tras una semana completa.
     if start_index is None:
         start_index = 24 * 7
 
-    # Por defecto: terminamos al final de la serie (n) menos el horizonte, para no quedarnos sin datos verdaderos que comparar
+    # Si no se especifica dónde terminar, llegamos hasta el final de la serie
+    # menos el horizonte, para asegurarnos de que siempre haya valores reales
+    # con los que comparar la predicción.
     if end_index is None:
         end_index = n - horizon
 
+    # Validaciones para evitar rangos inconsistentes.
     if start_index < 1:
         raise ValueError("start_index debe ser >= 1")
+
     if end_index > n - horizon:
         end_index = n - horizon
-    if start_index >= end_index:
-        raise ValueError(f"Rango inválido: start_index={start_index}, end_index={end_index}")
 
+    if start_index >= end_index:
+        raise ValueError(
+            f"Rango inválido: start_index={start_index}, end_index={end_index}"
+        )
+
+    # Acumuladores para guardar:
+    # - todos los valores reales futuros observados
+    # - todas las predicciones del modelo
+    # para luego calcular métricas globales.
     all_true = []
     all_pred = []
+
+    # Contador de cuántos exámenes hemos hecho.
     origins = 0
 
+    # Primer origen temporal desde el que empezamos a predecir.
     t = start_index
+  
+    # En cada iteración:
+    # - history = pasado disponible hasta t
+    # - y_true  = futuro real de longitud horizon
+    # - y_pred  = predicción del modelo para ese futuro
     while t < end_index:
+        # Todo lo anterior a t es el histórico que el modelo puede usar.
         history = y[:t]
+
+        # Los siguientes 'horizon' puntos son lo que queremos predecir.
         y_true = y[t : t + horizon]
 
+        # El modelo hace su forecast usando solo el histórico.
         y_pred = model.forecast(history=history, horizon=horizon)
+
         y_pred = np.asarray(y_pred, dtype=float)
 
+        
         if y_pred.shape != (horizon,):
-            raise ValueError(f"El modelo devolvió shape {y_pred.shape}, esperado {(horizon,)}")
+            raise ValueError(
+                f"El modelo devolvió shape {y_pred.shape}, esperado {(horizon,)}"
+            )
 
+        # Guardamos esta predicción y su verdad correspondiente.
         all_true.append(y_true)
         all_pred.append(y_pred)
+
+        # Contamos un origen más evaluado.
         origins += 1
 
+        # Avanzamos el origen.
         t += stride
 
     y_true_all = np.concatenate(all_true)
     y_pred_all = np.concatenate(all_pred)
 
+    # Calculamos métricas globales sobre todas las predicciones acumuladas
+    # y devolvemos el resultado final del backtesting.
     return BacktestResult(
         n_origins=origins,
         horizon=horizon,
@@ -104,21 +154,3 @@ def rolling_origin_backtest(
         rmse=rmse(y_true_all, y_pred_all),
     )
 
-
-# Ejemplo de modelo naive: predice que el precio de las próximas 24h será igual al último precio observado
-class NaiveLastValue:
-    def forecast(self, history: np.ndarray, horizon: int) -> np.ndarray:
-        last = float(history[-1])
-        return np.full(horizon, last, dtype=float)
-
-
-if __name__ == "__main__":
-    # Carga datos y backtest con modelo naive para validar que todo funciona
-    from src.evaluation.split import load_data, temporal_split
-
-    df = load_data()
-    _, val, _ = temporal_split(df)
-    series = val["price"]
-
-    res = rolling_origin_backtest(series=series, model=NaiveLastValue(), horizon=24, stride=24)
-    print(res)
