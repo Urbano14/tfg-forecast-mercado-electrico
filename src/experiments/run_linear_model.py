@@ -13,7 +13,10 @@ RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def split_featured_data(df_feat: pd.DataFrame):
-    train = df_feat[(df_feat["timestamp"].dt.year >= 2020) & (df_feat["timestamp"].dt.year <= 2022)]
+    train = df_feat[
+        (df_feat["timestamp"].dt.year >= 2020) &
+        (df_feat["timestamp"].dt.year <= 2022)
+    ]
     val = df_feat[df_feat["timestamp"].dt.year == 2023]
     test = df_feat[df_feat["timestamp"].dt.year == 2024]
 
@@ -24,15 +27,9 @@ def split_featured_data(df_feat: pd.DataFrame):
     )
 
 
-def evaluate_one_split(model, df_split: pd.DataFrame, split_name: str):
-    """
-    Evaluación simple sobre un dataframe ya transformado en features.
-    Aquí no usamos aún rolling_origin_backtest porque primero queremos validar
-    que el modelo lineal aprende correctamente sobre el dataset supervisado.
-    """
-    X = df_split[model.feature_cols]
-    y_true = df_split["price"].to_numpy()
-    y_pred = model.model.predict(X)
+def evaluate_one_split(model: LinearRegressionModel, df_split: pd.DataFrame, split_name: str):
+    y_true = df_split["price"]
+    y_pred = model.predict(df_split)
 
     result = {
         "dataset": split_name,

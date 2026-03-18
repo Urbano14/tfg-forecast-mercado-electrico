@@ -3,9 +3,9 @@ import pandas as pd
 from pathlib import Path
 from xgboost import XGBRegressor
 
-from src.evaluation.split import load_data, temporal_split
+from src.evaluation.split import temporal_split
 from src.evaluation.metrics import mae, rmse
-from src.features.build_features import build_features
+from src.features.build_features import load_series, build_features
 
 
 RESULTS_PATH = Path("results/xgboost_optuna_results.csv")
@@ -13,7 +13,6 @@ RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def objective(trial, X_train, y_train, X_val, y_val):
-
     params = {
         "n_estimators": trial.suggest_int("n_estimators", 100, 600),
         "max_depth": trial.suggest_int("max_depth", 3, 10),
@@ -22,24 +21,24 @@ def objective(trial, X_train, y_train, X_val, y_val):
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
         "random_state": 42,
         "n_jobs": -1,
+        "objective": "reg:squarederror",
     }
 
     model = XGBRegressor(**params)
-
     model.fit(X_train, y_train)
 
     preds = model.predict(X_val)
-
     return mae(y_val, preds)
 
 
 def main():
-
     print("=== XGBoost + Optuna ===")
 
-    df = load_data()
+    # Carga del dataset fusionado (precio + exógenas)
+    df = load_series()
     df = build_features(df)
 
+    # Split temporal
     train, val, test = temporal_split(df)
 
     feature_cols = [c for c in df.columns if c not in ["timestamp", "price"]]
@@ -53,8 +52,8 @@ def main():
     X_test = test[feature_cols]
     y_test = test["price"]
 
+    # Búsqueda de hiperparámetros
     study = optuna.create_study(direction="minimize")
-
     study.optimize(
         lambda trial: objective(trial, X_train, y_train, X_val, y_val),
         n_trials=50
@@ -62,8 +61,13 @@ def main():
 
     print("Best params:", study.best_params)
 
-    best_model = XGBRegressor(**study.best_params, random_state=42, n_jobs=-1)
-
+    # Entrenar mejor modelo
+    best_model = XGBRegressor(
+        **study.best_params,
+        random_state=42,
+        n_jobs=-1,
+        objective="reg:squarederror",
+    )
     best_model.fit(X_train, y_train)
 
     preds_val = best_model.predict(X_val)
@@ -87,7 +91,6 @@ def main():
     }])
 
     results.to_csv(RESULTS_PATH, index=False)
-
     print(f"Results saved to {RESULTS_PATH}")
 
 
