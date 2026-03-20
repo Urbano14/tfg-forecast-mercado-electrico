@@ -14,7 +14,6 @@ MODEL_DIR = Path("models/chronos2_with_covariates")
 def load_data() -> pd.DataFrame:
     df = pd.read_parquet(DATA_PATH)
 
-    # AutoGluon exige datetime64 sin zona horaria
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True).dt.tz_localize(None)
 
     df = df.sort_values("timestamp").reset_index(drop=True)
@@ -31,17 +30,13 @@ def prepare_data():
         "hydro_programmed",
     ]
 
-    # Nos quedamos solo con target + covariables
     df = df[["timestamp", "price"] + covariates].copy()
 
-    # AutoGluon necesita item_id y target
     df = df.rename(columns={"price": "target"})
     df["item_id"] = "precio_es"
 
-    # Orden final de columnas
     df = df[["item_id", "timestamp", "target"] + covariates]
 
-    # Split temporal
     train_df = df[df["timestamp"].dt.year <= 2023].copy()
     test_df = df[df["timestamp"].dt.year == 2024].copy()
 
@@ -89,7 +84,7 @@ def main():
         },
         enable_ensemble=False,
         verbosity=2,
-        time_limit=1800,  # 30 min máx; si quieres, luego lo bajamos/subimos
+        time_limit=1800,  
     )
 
     leaderboard = predictor.leaderboard(test_ts)
