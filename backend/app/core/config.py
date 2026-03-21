@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     DATA_PATH: str = "../data/processed/spot_es_with_exogenous.parquet"
     MODELS_PATH: str = "../models/"
 
+    ESIOS_TOKEN: str | None = None
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8"
