@@ -10,6 +10,7 @@ class ForecastPointResponse(BaseModel):
 
 class ForecastResponse(BaseModel):
     model: str
+    model_type: str
     requested_date: datetime
     horizon_hours: int
     forecast: list[ForecastPointResponse]

@@ -1,7 +1,12 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 
 class Settings(BaseSettings):
+    
+
     APP_NAME: str = "Electricity Market Forecast API"
     APP_VERSION: str = "0.1.0"
 
@@ -10,6 +15,8 @@ class Settings(BaseSettings):
 
     DATA_PATH: str = "../data/processed/spot_es_with_exogenous.parquet"
     MODELS_PATH: str = "../models/"
+
+    XGBOOST_MODEL_PATH: str = str( BASE_DIR / "models" / "xgboost" / "xgboost_optuna_exogenous.pkl")
 
     ESIOS_TOKEN: str | None = None
 

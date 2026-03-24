@@ -1,3 +1,5 @@
+
+import joblib
 import optuna
 import pandas as pd
 from pathlib import Path
@@ -10,6 +12,8 @@ from src.features.build_features import load_series, build_features
 
 RESULTS_PATH = Path("results/xgboost_optuna_results.csv")
 RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+MODEL_PATH = Path("models/xgboost/xgboost_optuna_exogenous.pkl")
+MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 
 def objective(trial, X_train, y_train, X_val, y_val):
@@ -92,7 +96,9 @@ def main():
 
     results.to_csv(RESULTS_PATH, index=False)
     print(f"Results saved to {RESULTS_PATH}")
-
+    
+    joblib.dump(best_model, MODEL_PATH)
+    print(f"Model saved to {MODEL_PATH}")
 
 if __name__ == "__main__":
     main()
