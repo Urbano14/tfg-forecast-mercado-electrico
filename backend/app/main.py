@@ -6,6 +6,7 @@ from app.api.routers import historical
 from app.core.config import settings
 from app.api.routers import forecast
 from app.api.routers import models
+from app.api.routers import metrics
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -25,6 +26,7 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(historical.router, prefix="/api/v1")
 app.include_router(forecast.router, prefix="/api/v1")
 app.include_router(models.router, prefix="/api/v1")
+app.include_router(metrics.router, prefix="/api/v1")
 
 @app.get("/")
 def root():

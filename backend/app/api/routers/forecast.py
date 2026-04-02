@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.application.services.forecast_service import (
     generate_dummy_forecast,
+    generate_chronos_forecast,
     generate_seasonal_naive_forecast,
     generate_xgboost_forecast
 )
@@ -25,6 +26,9 @@ def get_forecast(
 
     if model == "xgboost":
         return generate_xgboost_forecast(db, date)
+
+    if model == "chronos":
+        return generate_chronos_forecast(db, date)
 
     return generate_dummy_forecast(
         requested_date=date,

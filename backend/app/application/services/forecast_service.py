@@ -4,6 +4,7 @@ import pandas as pd
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from autogluon.timeseries import TimeSeriesDataFrame
 
 from app.application.services.historical_service import (
     get_historical_data_between,
@@ -13,6 +14,7 @@ from app.application.services.historical_service import (
 from app.application.services.model_service import is_supported_model
 from app.schemas.forecast import ForecastPointResponse, ForecastResponse
 from app.infrastructure.ml.xgboost_loader import load_xgboost_model
+from app.infrastructure.ml.chronos_loader import load_chronos_predictor
 
 
 def generate_dummy_forecast(
@@ -47,12 +49,20 @@ def generate_seasonal_naive_forecast(
     requested_date: datetime
 ) -> ForecastResponse:
 
+    if requested_date.tzinfo is not None:
+        requested_date = requested_date.replace(tzinfo=None)
+
     data_range = get_historical_data_range(db)
     if data_range["start"] is None or data_range["end"] is None:
         raise HTTPException(
             status_code=400,
             detail="No historical data available"
         )
+
+    if data_range["start"].tzinfo is not None:
+        data_range["start"] = data_range["start"].replace(tzinfo=None)
+    if data_range["end"].tzinfo is not None:
+        data_range["end"] = data_range["end"].replace(tzinfo=None)
 
     if requested_date.minute != 0 or requested_date.second != 0:
         raise HTTPException(
@@ -160,6 +170,8 @@ def generate_xgboost_forecast(
     db: Session,
     requested_date: datetime
 ) -> ForecastResponse:
+    if requested_date.tzinfo is not None:
+        requested_date = requested_date.replace(tzinfo=None)
     if requested_date.minute != 0 or requested_date.second != 0:
         raise HTTPException(
             status_code=400,
@@ -218,4 +230,200 @@ def generate_xgboost_forecast(
     requested_date=requested_date,
     horizon_hours=24,
     forecast=forecast
+    )
+
+
+def generate_chronos_forecast(
+    db: Session,
+    requested_date: datetime
+) -> ForecastResponse:
+    if requested_date.tzinfo is not None:
+        requested_date = requested_date.replace(tzinfo=None)
+    if requested_date.minute != 0 or requested_date.second != 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Date must be aligned to full hour (e.g., 2022-01-01T00:00:00)"
+        )
+
+    data_range = get_historical_data_range(db)
+    if data_range["start"] is None or data_range["end"] is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No historical data available for Chronos"
+        )
+
+    if requested_date < data_range["start"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Requested date is too early for Chronos"
+        )
+
+    historical_rows = get_historical_data_between(
+        db=db,
+        start=data_range["start"],
+        end=requested_date
+    )
+
+    if not historical_rows:
+        raise HTTPException(
+            status_code=400,
+            detail="No historical data available for Chronos"
+        )
+
+    if historical_rows[-1].timestamp < requested_date:
+        raise HTTPException(
+            status_code=400,
+            detail="Requested date not present in historical data for Chronos"
+        )
+
+    historical_records = []
+    for row in historical_rows:
+        if row.price is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Missing price data for Chronos"
+            )
+
+        exog_values = {
+            "demand_forecast": row.demand_forecast,
+            "wind_forecast": row.wind_forecast,
+            "solar_forecast": row.solar_forecast,
+            "hydro_programmed": row.hydro_programmed,
+        }
+
+        if any(value is None for value in exog_values.values()):
+            raise HTTPException(
+                status_code=400,
+                detail="Missing exogenous data for Chronos"
+            )
+
+        historical_records.append(
+            {
+                "item_id": "price",
+                "timestamp": row.timestamp,
+                "target": row.price,
+                **exog_values,
+            }
+        )
+
+    historical_df = pd.DataFrame(historical_records)
+    historical_df["timestamp"] = pd.to_datetime(historical_df["timestamp"])
+    historical_df = historical_df.sort_values("timestamp")
+    historical_df = historical_df.dropna(subset=["target"])
+
+    if historical_df.empty:
+        raise HTTPException(
+            status_code=400,
+            detail="No valid historical data available for Chronos"
+        )
+
+    ts_df = TimeSeriesDataFrame.from_data_frame(
+        historical_df,
+        id_column="item_id",
+        timestamp_column="timestamp"
+    )
+
+    future_end = requested_date + timedelta(hours=24)
+    future_rows = get_historical_data_between(
+        db=db,
+        start=requested_date + timedelta(hours=1),
+        end=future_end
+    )
+
+    if len(future_rows) != 24:
+        raise HTTPException(
+            status_code=400,
+            detail="Not enough future covariates for Chronos (need 24 hours)"
+        )
+
+    future_records = []
+    for row in future_rows:
+        exog_values = {
+            "demand_forecast": row.demand_forecast,
+            "wind_forecast": row.wind_forecast,
+            "solar_forecast": row.solar_forecast,
+            "hydro_programmed": row.hydro_programmed,
+        }
+
+        if any(value is None for value in exog_values.values()):
+            raise HTTPException(
+                status_code=400,
+                detail="Missing future exogenous data for Chronos"
+            )
+
+        future_records.append(
+            {
+                "item_id": "price",
+                "timestamp": row.timestamp,
+                **exog_values,
+            }
+        )
+
+    known_covariates_df = pd.DataFrame(future_records)
+    known_covariates_df["timestamp"] = pd.to_datetime(known_covariates_df["timestamp"])
+    known_covariates_df = known_covariates_df.sort_values("timestamp")
+
+    known_covariates_ts = TimeSeriesDataFrame.from_data_frame(
+        known_covariates_df,
+        id_column="item_id",
+        timestamp_column="timestamp"
+    )
+
+    try:
+        predictor = load_chronos_predictor()
+        predictions = predictor.predict(
+            data=ts_df,
+            known_covariates=known_covariates_ts
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chronos prediction failed: {exc}"
+        ) from exc
+
+    if predictions is None or predictions.empty:
+        raise HTTPException(
+            status_code=500,
+            detail="Chronos prediction returned empty output"
+        )
+
+    try:
+        item_predictions = predictions.loc["price"]
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Chronos output missing item_id 'price': {exc}"
+        ) from exc
+
+    predictions_df = item_predictions.reset_index()
+
+    if "mean" not in predictions_df.columns:
+        raise HTTPException(
+            status_code=500,
+            detail="Chronos output does not include mean predictions"
+        )
+
+    predictions_df["timestamp"] = pd.to_datetime(predictions_df["timestamp"])
+    predictions_df = predictions_df.sort_values("timestamp").head(24)
+
+    if len(predictions_df) < 24:
+        raise HTTPException(
+            status_code=400,
+            detail="Chronos did not return 24 future steps"
+        )
+
+    forecast = [
+        ForecastPointResponse(
+            timestamp=row["timestamp"].to_pydatetime(),
+            value=float(row["mean"])
+        )
+        for _, row in predictions_df.iterrows()
+    ]
+
+    return ForecastResponse(
+        model="chronos",
+        model_type="foundation_model",
+        requested_date=requested_date,
+        horizon_hours=24,
+        forecast=forecast
     )

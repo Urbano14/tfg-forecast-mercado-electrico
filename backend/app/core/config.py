@@ -16,7 +16,12 @@ class Settings(BaseSettings):
     DATA_PATH: str = "../data/processed/spot_es_with_exogenous.parquet"
     MODELS_PATH: str = "../models/"
 
-    XGBOOST_MODEL_PATH: str = str( BASE_DIR / "models" / "xgboost" / "xgboost_optuna_exogenous.pkl")
+    XGBOOST_MODEL_PATH: str = str(
+        BASE_DIR / "models" / "xgboost" / "xgboost_optuna_exogenous.pkl"
+    )
+    CHRONOS_MODEL_PATH: str = str(
+        BASE_DIR / "models" / "chronos2_with_covariates"
+    )
 
     ESIOS_TOKEN: str | None = None
 

@@ -4,57 +4,39 @@ import {
   fetchHistoricalRange,
   type HistoricalDataPoint,
 } from "../api/historicalApi";
-import { fetchForecast, type ForecastPoint } from "../api/forecastApi";
-import { fetchModels, type ModelInfo } from "../api/modelsApi.ts";
 import PriceChart from "../components/PriceChart";
+import { APP_TIMEZONE, formatTimestamp, toDateInputValue } from "../utils/date";
+import { formatNumber } from "../utils/number";
 
 function HistoricalPage() {
   const initialStart = "2022-01-01";
   const initialEnd = "2022-01-04";
+  const TABLE_LIMIT = 50;
 
   const [range, setRange] = useState<{ start: string; end: string } | null>(null);
   const [data, setData] = useState<HistoricalDataPoint[]>([]);
-  const [forecast, setForecast] = useState<ForecastPoint[]>([]);
-  const [models, setModels] = useState<ModelInfo[]>([]);
 
-  const [error, setError] = useState<string | null>(null);
+  const [historicalError, setHistoricalError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tableQuery, setTableQuery] = useState("");
 
   const [start, setStart] = useState(initialStart);
   const [end, setEnd] = useState(initialEnd);
 
-  const [selectedModel, setSelectedModel] = useState("seasonal_naive");
-  const [forecastDate, setForecastDate] = useState("2022-01-03T00:00");
-
   const loadHistoricalData = useCallback(async (currentStart: string, currentEnd: string) => {
     try {
       setLoading(true);
-      setError(null);
+      setHistoricalError(null);
 
       const historicalData = await fetchHistoricalData(currentStart, currentEnd, 200);
       setData(historicalData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setHistoricalError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
   }, []);
-
-  async function loadForecast() {
-    try {
-      setError(null);
-
-      const normalizedForecastDate = `${forecastDate}:00`;
-      const forecastResponse = await fetchForecast(
-        normalizedForecastDate,
-        selectedModel
-      );
-
-      setForecast(forecastResponse.forecast);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    }
-  }
 
   useEffect(() => {
     async function initializePage() {
@@ -62,48 +44,88 @@ function HistoricalPage() {
         const rangeData = await fetchHistoricalRange();
         setRange(rangeData);
 
-        const modelsResponse = await fetchModels();
-        setModels(modelsResponse.models);
-
         await loadHistoricalData(initialStart, initialEnd);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setHistoricalError(err instanceof Error ? err.message : "Unknown error");
         setLoading(false);
       }
     }
 
     initializePage();
-  }, [initialStart, initialEnd, loadHistoricalData]);
+  }, [loadHistoricalData]);
 
   function handleLoadClick() {
+    setValidationError(null);
+
+    if (start > end) {
+      setValidationError("Start date must be earlier than or equal to end date.");
+      return;
+    }
+
+    if (range) {
+      const minDate = toDateInputValue(range.start);
+      const maxDate = toDateInputValue(range.end);
+
+      if (
+        (minDate && start < minDate) ||
+        (maxDate && start > maxDate) ||
+        (minDate && end < minDate) ||
+        (maxDate && end > maxDate)
+      ) {
+        setValidationError(
+          `Selected dates must be within available range (${minDate} to ${maxDate}).`
+        );
+        return;
+      }
+    }
+
     loadHistoricalData(start, end);
   }
 
   const chartData = useMemo(() => {
-    const byTimestamp = new Map<string, { timestamp: string; price?: number; forecast?: number }>();
+    const byTimestamp = new Map<string, { timestamp: string; price?: number }>();
+
     data.forEach((row) => {
-      byTimestamp.set(row.timestamp, { timestamp: row.timestamp, price: row.price });
+      byTimestamp.set(row.timestamp, {
+        timestamp: row.timestamp,
+        price: row.price,
+      });
     });
-    forecast.forEach((row) => {
-      const existing = byTimestamp.get(row.timestamp);
-      if (existing) {
-        existing.forecast = row.value;
-      } else {
-        byTimestamp.set(row.timestamp, { timestamp: row.timestamp, forecast: row.value });
-      }
+
+    return Array.from(byTimestamp.values()).sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  }, [data]);
+
+  const filteredRows = useMemo(() => {
+    const query = tableQuery.trim().toLowerCase();
+    if (!query) {
+      return data;
+    }
+
+    return data.filter((row) => {
+      const rawTimestamp = row.timestamp.toLowerCase();
+      const formattedTimestamp = formatTimestamp(row.timestamp).toLowerCase();
+      return rawTimestamp.includes(query) || formattedTimestamp.includes(query);
     });
-    return Array.from(byTimestamp.values());
-  }, [data, forecast]);
+  }, [data, tableQuery]);
+
+  const visibleRows = useMemo(() => {
+    return filteredRows.slice(0, TABLE_LIMIT);
+  }, [filteredRows]);
 
   return (
     <div className="page">
       <header className="page__header">
         <div>
-          <h1 className="page__title">Analisis Historico y Prediccion</h1>
+          <h1 className="page__title">Analisis Historico</h1>
           <p className="page__subtitle">
-            Serie temporal del mercado electrico espanol. Visualizacion del historico y forecast de precios.
+            Serie temporal del mercado electrico espanol. Visualizacion del historico de
+            precios.
           </p>
+          <p className="page__subtitle">Timezone: {APP_TIMEZONE}</p>
         </div>
+
         {range && (
           <div className="range-card">
             <div className="range-card__label">Rango disponible</div>
@@ -124,13 +146,19 @@ function HistoricalPage() {
           <h2>Filtros de historico</h2>
           <p>Selecciona un rango de fechas para cargar los datos.</p>
         </div>
+
         <div className="form-grid">
           <label className="field">
             <span>Fecha de inicio</span>
             <input
               type="date"
               value={start}
-              onChange={(e) => setStart(e.target.value)}
+              min={range ? toDateInputValue(range.start) : undefined}
+              max={range ? toDateInputValue(range.end) : undefined}
+              onChange={(e) => {
+                setStart(e.target.value);
+                setValidationError(null);
+              }}
             />
           </label>
 
@@ -139,7 +167,12 @@ function HistoricalPage() {
             <input
               type="date"
               value={end}
-              onChange={(e) => setEnd(e.target.value)}
+              min={range ? toDateInputValue(range.start) : undefined}
+              max={range ? toDateInputValue(range.end) : undefined}
+              onChange={(e) => {
+                setEnd(e.target.value);
+                setValidationError(null);
+              }}
             />
           </label>
 
@@ -150,53 +183,31 @@ function HistoricalPage() {
             </button>
           </div>
         </div>
-      </section>
 
-      <section className="card">
-        <div className="card__header">
-          <h2>Forecast</h2>
-          <p>Elige modelo y fecha base para generar la prediccion.</p>
-        </div>
-        <div className="form-grid">
-          <label className="field">
-            <span>Modelo</span>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-            >
-              {models.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field">
-            <span>Fecha de forecast</span>
-            <input
-              type="datetime-local"
-              value={forecastDate}
-              onChange={(e) => setForecastDate(e.target.value)}
-            />
-          </label>
-
-          <div className="field field--actions">
-            <span className="field__hint">Genera la serie prevista para ese punto.</span>
-            <button className="btn" onClick={loadForecast}>
-              Cargar forecast
-            </button>
-          </div>
-        </div>
+        {validationError && (
+          <p className="status status--error">{validationError}</p>
+        )}
       </section>
 
       <section className="card">
         <div className="card__header">
           <h2>Grafica de precios</h2>
-          <p>Historico y prediccion en una sola vista.</p>
+          <p>Serie historica con precios horarios del mercado.</p>
         </div>
+
         <div className="chart-wrap">
-          <PriceChart data={chartData} />
+          {loading && <p className="status">Cargando datos historicos...</p>}
+          {!loading && historicalError && (
+            <p className="status status--error">
+              Error al cargar historicos: {historicalError}
+            </p>
+          )}
+          {!loading && !historicalError && data.length === 0 && (
+            <p className="status">No historical data available for the selected range.</p>
+          )}
+          {!loading && !historicalError && data.length > 0 && (
+            <PriceChart data={chartData} showForecastA={false} showForecastB={false} />
+          )}
         </div>
       </section>
 
@@ -207,40 +218,69 @@ function HistoricalPage() {
         </div>
 
         {loading && <p className="status">Cargando datos historicos...</p>}
-        {error && <p className="status status--error">Error: {error}</p>}
+        {!loading && historicalError && (
+          <p className="status status--error">
+            Error al cargar historicos: {historicalError}
+          </p>
+        )}
+        {!loading && !historicalError && data.length === 0 && (
+          <p className="status">No historical data available for the selected range.</p>
+        )}
 
-        {!loading && !error && (
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Price</th>
-                  <th>Demand</th>
-                  <th>Wind</th>
-                  <th>Solar</th>
-                  <th>Hydro</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((row) => (
-                  <tr key={row.timestamp}>
-                    <td>{row.timestamp}</td>
-                    <td>{row.price}</td>
-                    <td>{row.demand_forecast ?? "-"}</td>
-                    <td>{row.wind_forecast ?? "-"}</td>
-                    <td>{row.solar_forecast ?? "-"}</td>
-                    <td>{row.hydro_programmed ?? "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {!loading && !historicalError && data.length > 0 && (
+          <>
+            <div className="table-controls">
+              <label className="table-controls__search">
+                <span>Buscar por timestamp</span>
+                <input
+                  type="text"
+                  placeholder="Ej: 2022-01-03 o 03/01/2022"
+                  value={tableQuery}
+                  onChange={(e) => setTableQuery(e.target.value)}
+                />
+              </label>
+              <p className="table-controls__meta">
+                Showing {visibleRows.length} of {filteredRows.length} filtered rows
+                (total {data.length}).
+              </p>
+            </div>
+
+            {filteredRows.length === 0 ? (
+              <p className="status">No hay resultados para esa búsqueda.</p>
+            ) : (
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Price (€)</th>
+                      <th>Demand Forecast</th>
+                      <th>Wind Forecast</th>
+                      <th>Solar Forecast</th>
+                      <th>Hydro Programmed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRows.map((row) => (
+                      <tr key={row.timestamp}>
+                        <td>{formatTimestamp(row.timestamp)}</td>
+                        <td>{formatNumber(row.price, 2)}</td>
+                        <td>{formatNumber(row.demand_forecast, 1)}</td>
+                        <td>{formatNumber(row.wind_forecast, 1)}</td>
+                        <td>{formatNumber(row.solar_forecast, 1)}</td>
+                        <td>{formatNumber(row.hydro_programmed, 1)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </section>
+
     </div>
   );
 }
 
 export default HistoricalPage;
-

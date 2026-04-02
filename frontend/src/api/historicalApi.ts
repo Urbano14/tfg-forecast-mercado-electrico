@@ -24,9 +24,10 @@ export async function fetchHistoricalData(
   limit?: number
 ): Promise<HistoricalDataPoint[]> {
   const params = new URLSearchParams({ start, end });
-  if (typeof limit === "number") {
-    params.set("limit", String(limit));
+
+  if (limit !== undefined) {
+    params.append("limit", String(limit));
   }
 
-  return apiFetch<HistoricalDataPoint[]>(`/historical/?${params.toString()}`);
+  return apiFetch<HistoricalDataPoint[]>(`/historical?${params.toString()}`);
 }

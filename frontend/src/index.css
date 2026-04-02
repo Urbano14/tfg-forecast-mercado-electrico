@@ -2,9 +2,9 @@ body {
   margin: 0;
   font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
   background:
-    radial-gradient(1200px 500px at 10% -10%, #e6edf2 0%, rgba(230, 237, 242, 0) 60%),
-    radial-gradient(900px 400px at 90% -20%, #e9f0f5 0%, rgba(233, 240, 245, 0) 55%),
-    #f5f7f9;
+    radial-gradient(1200px 500px at 10% -10%, #e2ebf5 0%, rgba(226, 235, 245, 0) 60%),
+    radial-gradient(900px 400px at 90% -20%, #f3e9df 0%, rgba(243, 233, 223, 0) 55%),
+    #f6f8fb;
   color: #1f1f1f;
   line-height: 1.5;
 }
@@ -12,12 +12,15 @@ body {
 :root {
   --bg-surface: #ffffff;
   --bg-soft: #f1f4f7;
+  --bg-strong: #0f2a3c;
   --border: #d7dee6;
   --text-main: #1f1f1f;
   --text-muted: #5f6b7a;
-  --accent: #2f5b7c;
-  --accent-strong: #1f4662;
-  --accent-soft: #e4eef5;
+  --accent: #1e64b7;
+  --accent-strong: #154a86;
+  --accent-soft: #e3efff;
+  --accent-warm: #d07a35;
+  --accent-warm-soft: #fff1e4;
   --error: #8a2f2f;
   --shadow: 0 10px 30px rgba(23, 35, 46, 0.08);
 }
