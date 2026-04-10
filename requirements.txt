@@ -7,3 +7,10 @@ scikit-learn
 pyarrow
 xgboost
 optuna
+fastapi
+uvicorn
+sqlalchemy
+pydantic-settings
+joblib
+psycopg2-binary
+autogluon.timeseries

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 
 from app.core.database import SessionLocal
@@ -5,7 +7,8 @@ from app.infrastructure.db.models import MarketData
 
 
 def main():
-    df = pd.read_parquet("data/processed/spot_es_with_exogenous.parquet")
+    data_path = Path(__file__).resolve().parents[2] / "data" / "processed" / "spot_es_with_exogenous.parquet"
+    df = pd.read_parquet(data_path)
 
     df = df[
         [

@@ -13,6 +13,7 @@ router = APIRouter(prefix="/historical", tags=["historical"])
 
 
 
+@router.get("", response_model=list[HistoricalDataResponse])
 @router.get("/", response_model=list[HistoricalDataResponse])
 def get_historical_data(
     start: datetime,

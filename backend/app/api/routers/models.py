@@ -6,6 +6,7 @@ from app.schemas.models import ModelsListResponse
 router = APIRouter(prefix="/models", tags=["models"])
 
 
+@router.get("", response_model=ModelsListResponse)
 @router.get("/", response_model=ModelsListResponse)
 def get_models():
     return {

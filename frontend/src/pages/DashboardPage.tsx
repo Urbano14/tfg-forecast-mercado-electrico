@@ -42,7 +42,7 @@ function DashboardPage() {
     return new Map(models.map((model) => [model.id, model]));
   }, [models]);
 
-  const bestMaeMetric = useMemo(() => {
+  const bestMaeMetric = useMemo<ModelMetric | null>(() => {
     let best: ModelMetric | null = null;
     metrics.forEach((metric) => {
       if (metric.mae === null || metric.mae === undefined) {
@@ -56,7 +56,7 @@ function DashboardPage() {
     return best;
   }, [metrics]);
 
-  const bestRmseMetric = useMemo(() => {
+  const bestRmseMetric = useMemo<ModelMetric | null>(() => {
     let best: ModelMetric | null = null;
     metrics.forEach((metric) => {
       if (metric.rmse === null || metric.rmse === undefined) {
