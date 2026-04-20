@@ -270,6 +270,13 @@ def generate_chronos_forecast(
             detail="No historical data available for Chronos"
         )
 
+    # Dedupe por timestamp (datasets con duplicados por hora).
+    hist_by_ts: dict[datetime, any] = {}
+    for row in historical_rows:
+        if row.timestamp not in hist_by_ts:
+            hist_by_ts[row.timestamp] = row
+    historical_rows = list(hist_by_ts.values())
+
     if historical_rows[-1].timestamp < requested_date:
         raise HTTPException(
             status_code=400,
@@ -329,6 +336,13 @@ def generate_chronos_forecast(
         start=requested_date + timedelta(hours=1),
         end=future_end
     )
+
+    # Dedupe por timestamp (datasets con duplicados por hora).
+    future_by_ts: dict[datetime, any] = {}
+    for row in future_rows:
+        if row.timestamp not in future_by_ts:
+            future_by_ts[row.timestamp] = row
+    future_rows = list(future_by_ts.values())
 
     if len(future_rows) != 24:
         raise HTTPException(

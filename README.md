@@ -1,4 +1,4 @@
-## Puesta en marcha (resumen)
+## Puesta en marcha 
 
 1. Iniciar la aplicación:
    ```powershell
