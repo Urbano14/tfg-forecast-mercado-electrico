@@ -270,7 +270,7 @@ def generate_chronos_forecast(
             detail="No historical data available for Chronos"
         )
 
-    # Dedupe por timestamp (datasets con duplicados por hora).
+    # datasets con duplicados por hora.
     hist_by_ts: dict[datetime, any] = {}
     for row in historical_rows:
         if row.timestamp not in hist_by_ts:

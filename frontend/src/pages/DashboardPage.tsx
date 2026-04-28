@@ -83,13 +83,13 @@ function DashboardPage() {
       <section className="hero">
         <div>
           <p className="hero__eyebrow">TFG Energia</p>
-          <h1 className="hero__title">Monitor del mercado electrico</h1>
+          <h1 className="hero__title">Centro de control del mercado electrico</h1>
           <p className="hero__lead">
             Panel central para el analisis historico, comparativa de modelos y
             seguimiento de predicciones del mercado electrico espanol.
           </p>
           <div className="hero__meta">
-            <span className="pill">Timezone: {APP_TIMEZONE}</span>
+            <span className="pill">{"\u26A1"} Timezone: {APP_TIMEZONE}</span>
             {range ? (
               <span className="pill pill--warm">
                 Rango: {rangeStart} - {rangeEnd}
@@ -115,7 +115,9 @@ function DashboardPage() {
           </div>
           <div className="hero-panel__card">
             <p className="hero-panel__label">Metricas cargadas</p>
-            <p className="hero-panel__value">{loading ? "-" : metrics.length}</p>
+            <p className="hero-panel__value hero-panel__value--warm">
+              {loading ? "-" : metrics.length}
+            </p>
           </div>
           <div className="hero-panel__card">
             <p className="hero-panel__label">Ultima fecha disponible</p>
@@ -129,12 +131,12 @@ function DashboardPage() {
       <section className="section">
         <div className="section__header">
           <h2>Indicadores clave</h2>
-          <p>Resumen rapido de modelos y rendimiento global.</p>
+          <p>Resumen rapido de modelos y rendimiento global en €/MWh.</p>
         </div>
 
         <div className="kpi-grid">
           <div className="kpi-card">
-            <p className="kpi-card__label">Mejor MAE</p>
+            <p className="kpi-card__label">Mejor MAE (€/MWh)</p>
             <p className="kpi-card__value">
               {bestMaeMetric ? formatNumber(bestMaeMetric.mae, 4) : "-"}
             </p>
@@ -142,8 +144,8 @@ function DashboardPage() {
           </div>
 
           <div className="kpi-card">
-            <p className="kpi-card__label">Mejor RMSE</p>
-            <p className="kpi-card__value">
+            <p className="kpi-card__label">Mejor RMSE (€/MWh)</p>
+            <p className="kpi-card__value kpi-card__value--warm">
               {bestRmseMetric ? formatNumber(bestRmseMetric.rmse, 4) : "-"}
             </p>
             <p className="kpi-card__meta">Modelo: {bestRmseName}</p>
@@ -167,13 +169,13 @@ function DashboardPage() {
           <Link className="quick-card" to="/historico">
             <h3 className="quick-card__title">Historico</h3>
             <p className="quick-card__meta">
-              Filtra rangos, consulta tabla y grafica de precios.
+              Filtra rangos, consulta tabla y grafica de precios en €/MWh.
             </p>
           </Link>
           <Link className="quick-card" to="/forecast">
             <h3 className="quick-card__title">Forecast</h3>
             <p className="quick-card__meta">
-              Compara modelos y revisa las predicciones generadas.
+              Compara modelos y revisa las predicciones generadas en €/MWh.
             </p>
           </Link>
           <Link className="quick-card" to="/models">

@@ -1,30 +1,85 @@
-body {
-  margin: 0;
-  font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
-  background:
-    radial-gradient(1200px 500px at 10% -10%, #e2ebf5 0%, rgba(226, 235, 245, 0) 60%),
-    radial-gradient(900px 400px at 90% -20%, #f3e9df 0%, rgba(243, 233, 223, 0) 55%),
-    #f6f8fb;
-  color: #1f1f1f;
-  line-height: 1.5;
-}
-
 :root {
-  --bg-surface: #ffffff;
-  --bg-soft: #f1f4f7;
-  --bg-strong: #0f2a3c;
-  --border: #d7dee6;
-  --text-main: #1f1f1f;
-  --text-muted: #5f6b7a;
-  --accent: #1e64b7;
-  --accent-strong: #154a86;
-  --accent-soft: #e3efff;
-  --accent-warm: #d07a35;
-  --accent-warm-soft: #fff1e4;
-  --error: #8a2f2f;
-  --shadow: 0 10px 30px rgba(23, 35, 46, 0.08);
+  color-scheme: dark;
+  --bg-root: #0a0f1e;
+  --bg-root-alt: #0d1b2a;
+  --bg-panel: rgba(13, 27, 42, 0.88);
+  --bg-panel-strong: #111827;
+  --bg-panel-soft: rgba(17, 24, 39, 0.82);
+  --bg-hover: rgba(18, 36, 58, 0.96);
+  --border: rgba(56, 189, 248, 0.18);
+  --border-strong: rgba(56, 189, 248, 0.4);
+  --text-main: #f8fafc;
+  --text-soft: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --accent: #38bdf8;
+  --accent-strong: #00aaff;
+  --accent-soft: rgba(56, 189, 248, 0.14);
+  --accent-warm: #f59e0b;
+  --accent-warm-soft: rgba(245, 158, 11, 0.16);
+  --accent-teal: #2dd4bf;
+  --success: #2dd4bf;
+  --error: #f87171;
+  --shadow-panel: 0 18px 45px rgba(2, 8, 23, 0.45);
+  --shadow-glow: 0 0 0 1px rgba(56, 189, 248, 0.14), 0 0 24px rgba(56, 189, 248, 0.14);
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --transition-fast: 160ms ease;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background-color: var(--bg-root);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  background-color: var(--bg-root);
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 32%),
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.08), transparent 24%);
+  background-size: 40px 40px, 40px 40px, auto, auto;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.08), transparent 18%),
+    radial-gradient(circle at 82% 12%, rgba(245, 158, 11, 0.06), transparent 16%);
+  opacity: 0.9;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a,
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+input,
+select {
+  color: inherit;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.35);
+  color: #fff;
 }

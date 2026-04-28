@@ -121,7 +121,7 @@ function HistoricalPage() {
           <h1 className="page__title">Analisis Historico</h1>
           <p className="page__subtitle">
             Serie temporal del mercado electrico espanol. Visualizacion del historico de
-            precios.
+            precios en €/MWh.
           </p>
           <p className="page__subtitle">Timezone: {APP_TIMEZONE}</p>
         </div>
@@ -192,11 +192,16 @@ function HistoricalPage() {
       <section className="card">
         <div className="card__header">
           <h2>Grafica de precios</h2>
-          <p>Serie historica con precios horarios del mercado.</p>
+          <p>Serie historica con precios horarios del mercado en €/MWh.</p>
         </div>
 
         <div className="chart-wrap">
-          {loading && <p className="status">Cargando datos historicos...</p>}
+          {loading && (
+            <div className="loading-stack" aria-live="polite">
+              <div className="loading-bar" />
+              <p className="status">Cargando datos historicos...</p>
+            </div>
+          )}
           {!loading && historicalError && (
             <p className="status status--error">
               Error al cargar historicos: {historicalError}
@@ -217,7 +222,12 @@ function HistoricalPage() {
           <p>Detalle por timestamp con variables auxiliares.</p>
         </div>
 
-        {loading && <p className="status">Cargando datos historicos...</p>}
+        {loading && (
+          <div className="loading-stack" aria-live="polite">
+            <div className="loading-bar" />
+            <p className="status">Cargando datos historicos...</p>
+          </div>
+        )}
         {!loading && historicalError && (
           <p className="status status--error">
             Error al cargar historicos: {historicalError}
@@ -253,7 +263,7 @@ function HistoricalPage() {
                   <thead>
                     <tr>
                       <th>Timestamp</th>
-                      <th>Price (€)</th>
+                      <th>Precio (€/MWh)</th>
                       <th>Demand Forecast</th>
                       <th>Wind Forecast</th>
                       <th>Solar Forecast</th>

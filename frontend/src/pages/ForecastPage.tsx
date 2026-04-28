@@ -431,7 +431,7 @@ function ForecastPage() {
                 forecastLoading
               }
             >
-              {forecastLoading ? "Cargando..." : "Load comparison"}
+              {forecastLoading ? "Cargando..." : "Cargar comparacion"}
             </button>
           </div>
         </div>
@@ -442,7 +442,7 @@ function ForecastPage() {
 
         {!forecastLoaded && !forecastError && forecastIsStale && (
           <p className="status status--notice">
-            La seleccion ha cambiado. Pulsa "Load comparison" para actualizar la
+            La seleccion ha cambiado. Pulsa "Cargar comparacion" para actualizar la
             prediccion.
           </p>
         )}
@@ -464,14 +464,19 @@ function ForecastPage() {
           <p>Comparativa cuantitativa para los modelos seleccionados.</p>
         </div>
 
-        {loadingModels && <p className="status">Cargando metricas...</p>}
+        {loadingModels && (
+          <div className="loading-stack" aria-live="polite">
+            <div className="loading-bar" />
+            <p className="status">Cargando metricas...</p>
+          </div>
+        )}
         {!loadingModels && metricsError && (
           <p className="status status--error">Error al cargar metricas: {metricsError}</p>
         )}
 
         {!loadingModels && !metricsError && (
           <div className="metrics-grid">
-            <div className="metrics-card">
+            <div className="metrics-card metrics-card--active">
               <div className="metrics-card__tag">Model A</div>
               <h3 className="metrics-card__title">
                 {selectedModelInfoA?.name ?? selectedModelA}
@@ -488,14 +493,14 @@ function ForecastPage() {
                 </div>
                 <div className="metrics-list__item">
                   <span className="metrics-label">RMSE</span>
-                  <strong className="metrics-value">
+                  <strong className="metrics-value metrics-value--warm">
                     {formatNumber(selectedMetricA?.rmse ?? null, 4)}
                   </strong>
                 </div>
               </div>
             </div>
 
-            <div className="metrics-card">
+            <div className="metrics-card metrics-card--active">
               <div className="metrics-card__tag">Model B</div>
               <h3 className="metrics-card__title">
                 {selectedModelInfoB?.name ?? selectedModelB}
@@ -512,7 +517,7 @@ function ForecastPage() {
                 </div>
                 <div className="metrics-list__item">
                   <span className="metrics-label">RMSE</span>
-                  <strong className="metrics-value">
+                  <strong className="metrics-value metrics-value--warm">
                     {formatNumber(selectedMetricB?.rmse ?? null, 4)}
                   </strong>
                 </div>
@@ -529,9 +534,17 @@ function ForecastPage() {
         </div>
 
         <div className="chart-wrap">
-          {forecastLoading && <p className="status">Cargando forecast...</p>}
+          {forecastLoading && (
+            <div className="loading-stack" aria-live="polite">
+              <div className="loading-bar" />
+              <p className="status">Cargando forecast...</p>
+            </div>
+          )}
           {!forecastLoading && historicalLoading && (
-            <p className="status">Cargando historico...</p>
+            <div className="loading-stack" aria-live="polite">
+              <div className="loading-bar" />
+              <p className="status">Cargando historico...</p>
+            </div>
           )}
           {!forecastLoading && !forecastError && chartData.length === 0 && (
             <p className="status">No forecast data available for the selection.</p>
