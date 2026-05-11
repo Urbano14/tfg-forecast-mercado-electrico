@@ -29,7 +29,7 @@ function DashboardPage() {
         setModels(modelsResponse.models);
         setMetrics(metricsResponse.metrics);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         setLoading(false);
       }
@@ -89,7 +89,7 @@ function DashboardPage() {
             seguimiento de predicciones del mercado electrico espanol.
           </p>
           <div className="hero__meta">
-            <span className="pill">{"\u26A1"} Timezone: {APP_TIMEZONE}</span>
+            <span className="pill">{"\u26A1"} Zona horaria: {APP_TIMEZONE}</span>
             {range ? (
               <span className="pill pill--warm">
                 Rango: {rangeStart} - {rangeEnd}
@@ -103,7 +103,7 @@ function DashboardPage() {
               Explorar historico
             </Link>
             <Link className="btn" to="/forecast">
-              Comparar forecast
+              Comparar predicciones
             </Link>
           </div>
         </div>
@@ -131,12 +131,12 @@ function DashboardPage() {
       <section className="section">
         <div className="section__header">
           <h2>Indicadores clave</h2>
-          <p>Resumen rapido de modelos y rendimiento global en €/MWh.</p>
+          <p>Resumen rapido de modelos y rendimiento global en EUR/MWh.</p>
         </div>
 
         <div className="kpi-grid">
           <div className="kpi-card">
-            <p className="kpi-card__label">Mejor MAE (€/MWh)</p>
+            <p className="kpi-card__label">Mejor MAE (EUR/MWh)</p>
             <p className="kpi-card__value">
               {bestMaeMetric ? formatNumber(bestMaeMetric.mae, 4) : "-"}
             </p>
@@ -144,7 +144,7 @@ function DashboardPage() {
           </div>
 
           <div className="kpi-card">
-            <p className="kpi-card__label">Mejor RMSE (€/MWh)</p>
+            <p className="kpi-card__label">Mejor RMSE (EUR/MWh)</p>
             <p className="kpi-card__value kpi-card__value--warm">
               {bestRmseMetric ? formatNumber(bestRmseMetric.rmse, 4) : "-"}
             </p>
@@ -169,13 +169,13 @@ function DashboardPage() {
           <Link className="quick-card" to="/historico">
             <h3 className="quick-card__title">Historico</h3>
             <p className="quick-card__meta">
-              Filtra rangos, consulta tabla y grafica de precios en €/MWh.
+              Filtra rangos y consulta la tabla y la grafica de precios en EUR/MWh.
             </p>
           </Link>
           <Link className="quick-card" to="/forecast">
-            <h3 className="quick-card__title">Forecast</h3>
+            <h3 className="quick-card__title">Prediccion</h3>
             <p className="quick-card__meta">
-              Compara modelos y revisa las predicciones generadas en €/MWh.
+              Compara modelos y revisa las predicciones generadas en EUR/MWh.
             </p>
           </Link>
           <Link className="quick-card" to="/models">

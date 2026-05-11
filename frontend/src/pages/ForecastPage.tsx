@@ -63,7 +63,7 @@ function ForecastPage() {
         setModels(modelsResponse.models);
         setMetrics(metricsResponse.metrics);
       } catch (err) {
-        setMetricsError(err instanceof Error ? err.message : "Unknown error");
+        setMetricsError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         setLoadingModels(false);
       }
@@ -129,7 +129,7 @@ function ForecastPage() {
       }
 
       if (forecastStart > forecastEnd) {
-        setValidationError("El rango del forecast es invalido (inicio > fin).");
+        setValidationError("El rango de prediccion es invalido (inicio > fin).");
         setForecastLoaded(false);
         return;
       }
@@ -154,14 +154,14 @@ function ForecastPage() {
       const forecastStartDate = parseDate(`${forecastStart}T00:00:00`);
       const forecastEndDate = parseDate(`${forecastEnd}T23:00:00`);
       if (!forecastStartDate || !forecastEndDate) {
-        setValidationError("Fechas de forecast invalidas.");
+        setValidationError("Las fechas de prediccion no son validas.");
         setForecastLoaded(false);
         return;
       }
 
       if (diffDays(forecastStartDate, forecastEndDate) > MAX_FORECAST_RANGE_DAYS) {
         setValidationError(
-          `El rango de forecast es demasiado grande. Maximo ${MAX_FORECAST_RANGE_DAYS} dias.`
+          `El rango de prediccion es demasiado grande. Maximo ${MAX_FORECAST_RANGE_DAYS} dias.`
         );
         setForecastLoaded(false);
         return;
@@ -188,7 +188,7 @@ function ForecastPage() {
         baseDatesB.length > MAX_FORECAST_CALLS_PER_MODEL
       ) {
         setValidationError(
-          `El rango de forecast es demasiado grande. Ajusta a un rango menor (max ${MAX_FORECAST_CALLS_PER_MODEL} llamadas por modelo).`
+          `El rango de prediccion es demasiado grande. Ajusta a un rango menor (maximo ${MAX_FORECAST_CALLS_PER_MODEL} llamadas por modelo).`
         );
         setForecastLoaded(false);
         return;
@@ -228,13 +228,13 @@ function ForecastPage() {
         );
         setHistoricalData(historicalResponse);
       } catch (err) {
-        setHistoricalError(err instanceof Error ? err.message : "Unknown error");
+        setHistoricalError(err instanceof Error ? err.message : "Error desconocido");
         setHistoricalData([]);
       } finally {
         setHistoricalLoading(false);
       }
     } catch (err) {
-      setForecastError(err instanceof Error ? err.message : "Unknown error");
+      setForecastError(err instanceof Error ? err.message : "Error desconocido");
       setForecastLoaded(false);
     } finally {
       setForecastLoading(false);
@@ -253,6 +253,12 @@ function ForecastPage() {
   const selectedMetricB = metricsById.get(selectedModelB);
   const selectedModelInfoA = modelById.get(selectedModelA);
   const selectedModelInfoB = modelById.get(selectedModelB);
+
+  const modelTypeLabels: Record<string, string> = {
+    baseline: "modelo base",
+    machine_learning: "aprendizaje automatico",
+    foundation_model: "modelo fundacional",
+  };
 
   const chartData = useMemo(() => {
     const byTimestamp = new Map<
@@ -311,23 +317,23 @@ function ForecastPage() {
     <div className="page">
       <header className="page__header">
         <div>
-          <h1 className="page__title">Forecast y comparativa</h1>
+          <h1 className="page__title">Prediccion y comparativa</h1>
           <p className="page__subtitle">
-            Generacion de predicciones horarias y comparacion de modelos en
-            {` ${APP_TIMEZONE}`}.
+            Generacion de predicciones horarias y comparacion de modelos. Zona
+            horaria: {` ${APP_TIMEZONE}`}.
           </p>
         </div>
       </header>
 
       <section className="card">
         <div className="card__header">
-          <h2>Configuracion de forecast</h2>
-          <p>Selecciona modelos y rango temporal para comparar historico y forecast.</p>
+          <h2>Configuracion de prediccion</h2>
+          <p>Selecciona modelos y rango temporal para comparar historico y prediccion.</p>
         </div>
 
         <div className="form-grid">
           <label className="field">
-            <span>Model A</span>
+            <span>Modelo A</span>
             <select
               value={selectedModelA}
               onChange={(e) => {
@@ -345,7 +351,7 @@ function ForecastPage() {
           </label>
 
           <label className="field">
-            <span>Model B</span>
+            <span>Modelo B</span>
             <select
               value={selectedModelB}
               onChange={(e) => {
@@ -363,7 +369,7 @@ function ForecastPage() {
           </label>
 
           <label className="field">
-            <span>Forecast inicio</span>
+            <span>Inicio de prediccion</span>
             <input
               type="date"
               value={forecastStart}
@@ -375,7 +381,7 @@ function ForecastPage() {
           </label>
 
           <label className="field">
-            <span>Forecast fin</span>
+            <span>Fin de prediccion</span>
             <input
               type="date"
               value={forecastEnd}
@@ -416,7 +422,7 @@ function ForecastPage() {
 
           <div className="field field--actions">
             <span className="field__hint">
-              Genera historico y forecast para el rango seleccionado.
+              Genera historico y prediccion para el rango seleccionado.
             </span>
             <button
               className="btn btn--primary"
@@ -436,9 +442,7 @@ function ForecastPage() {
           </div>
         </div>
 
-        {validationError && (
-          <p className="status status--error">{validationError}</p>
-        )}
+        {validationError && <p className="status status--error">{validationError}</p>}
 
         {!forecastLoaded && !forecastError && forecastIsStale && (
           <p className="status status--notice">
@@ -448,12 +452,12 @@ function ForecastPage() {
         )}
 
         {!forecastLoaded && !forecastError && !forecastIsStale && (
-          <p className="status">Selecciona parametros y carga la comparacion.</p>
+          <p className="status">Selecciona los parametros y carga la comparacion.</p>
         )}
 
         {forecastError && (
           <p className="status status--error">
-            Error al cargar forecast: {forecastError}
+            Error al cargar la prediccion: {forecastError}
           </p>
         )}
       </section>
@@ -477,12 +481,12 @@ function ForecastPage() {
         {!loadingModels && !metricsError && (
           <div className="metrics-grid">
             <div className="metrics-card metrics-card--active">
-              <div className="metrics-card__tag">Model A</div>
+              <div className="metrics-card__tag">Modelo A</div>
               <h3 className="metrics-card__title">
                 {selectedModelInfoA?.name ?? selectedModelA}
               </h3>
               <p className="metrics-card__meta">
-                Type: {selectedModelInfoA?.type ?? "-"}
+                Tipo: {modelTypeLabels[selectedModelInfoA?.type ?? ""] ?? selectedModelInfoA?.type ?? "-"}
               </p>
               <div className="metrics-list">
                 <div className="metrics-list__item">
@@ -501,12 +505,12 @@ function ForecastPage() {
             </div>
 
             <div className="metrics-card metrics-card--active">
-              <div className="metrics-card__tag">Model B</div>
+              <div className="metrics-card__tag">Modelo B</div>
               <h3 className="metrics-card__title">
                 {selectedModelInfoB?.name ?? selectedModelB}
               </h3>
               <p className="metrics-card__meta">
-                Type: {selectedModelInfoB?.type ?? "-"}
+                Tipo: {modelTypeLabels[selectedModelInfoB?.type ?? ""] ?? selectedModelInfoB?.type ?? "-"}
               </p>
               <div className="metrics-list">
                 <div className="metrics-list__item">
@@ -529,7 +533,7 @@ function ForecastPage() {
 
       <section className="card">
         <div className="card__header">
-          <h2>Grafica de forecast</h2>
+          <h2>Grafica de prediccion</h2>
           <p>Comparativa visual de las predicciones generadas.</p>
         </div>
 
@@ -537,7 +541,7 @@ function ForecastPage() {
           {forecastLoading && (
             <div className="loading-stack" aria-live="polite">
               <div className="loading-bar" />
-              <p className="status">Cargando forecast...</p>
+              <p className="status">Cargando prediccion...</p>
             </div>
           )}
           {!forecastLoading && historicalLoading && (
@@ -547,7 +551,7 @@ function ForecastPage() {
             </div>
           )}
           {!forecastLoading && !forecastError && chartData.length === 0 && (
-            <p className="status">No forecast data available for the selection.</p>
+            <p className="status">No hay datos de prediccion disponibles para la seleccion.</p>
           )}
           {!forecastLoading && !historicalLoading && historicalError && (
             <p className="status status--error">

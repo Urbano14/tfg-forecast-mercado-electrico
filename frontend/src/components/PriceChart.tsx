@@ -43,15 +43,15 @@ function PriceChart({
 }: Props) {
   const formatSeriesLabel = (value: string) => {
     if (value === "price") {
-      return "Precio historico (€/MWh)";
+      return "Precio historico (EUR/MWh)";
     }
 
     if (value === "forecastA") {
-      return "Forecast A (€/MWh)";
+      return "Prediccion A (EUR/MWh)";
     }
 
     if (value === "forecastB") {
-      return "Forecast B (€/MWh)";
+      return "Prediccion B (EUR/MWh)";
     }
 
     return value;
@@ -59,7 +59,7 @@ function PriceChart({
 
   const formatTooltipValue = (value: unknown) => {
     if (typeof value === "number" && Number.isFinite(value)) {
-      return `${value.toFixed(2)} €/MWh`;
+      return `${value.toFixed(2)} EUR/MWh`;
     }
 
     return "-";
@@ -113,7 +113,7 @@ function PriceChart({
             tickLine={{ stroke: "rgba(255,255,255,0.08)" }}
             axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
             label={{
-              value: "Precio (€/MWh)",
+              value: "Precio (EUR/MWh)",
               angle: -90,
               position: "insideLeft",
               fill: "#94a3b8",
@@ -131,7 +131,7 @@ function PriceChart({
               dataKey="price"
               stroke="#38bdf8"
               dot={false}
-              name="Precio historico (€/MWh)"
+              name="Precio historico (EUR/MWh)"
               strokeWidth={2.5}
               style={{ filter: "drop-shadow(0 0 4px #38bdf8)" }}
             />
@@ -142,7 +142,7 @@ function PriceChart({
               dataKey="forecastA"
               stroke="#f59e0b"
               dot={false}
-              name="Forecast A (€/MWh)"
+              name="Prediccion A (EUR/MWh)"
               strokeDasharray="6 4"
               strokeWidth={2.5}
               style={{ filter: "drop-shadow(0 0 4px #f59e0b)" }}
@@ -154,7 +154,7 @@ function PriceChart({
               dataKey="forecastB"
               stroke="#2dd4bf"
               dot={false}
-              name="Forecast B (€/MWh)"
+              name="Prediccion B (EUR/MWh)"
               strokeDasharray="3 3"
               strokeWidth={2.5}
               style={{ filter: "drop-shadow(0 0 4px #2dd4bf)" }}

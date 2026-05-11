@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-
+#Este script fusiona el dataset de precios con el dataset exógeno, usando la columna "timestamp" como clave de unión. El resultado se guarda en formato parquet y csv para su uso posterior.
 
 PRICE_PATH = Path("data/processed/spot_es_processed.parquet")
 EXOG_PATH = Path("data/raw/exogenous/exogenous_merged.parquet")

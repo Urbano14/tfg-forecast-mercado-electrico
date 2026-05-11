@@ -382,7 +382,8 @@ def generate_chronos_forecast(
         id_column="item_id",
         timestamp_column="timestamp"
     )
-
+    #lo anterior es preparación de datos para Chronos: cargar histórico, verificar que cubre el requested_date, preparar dataframe con target y covariables, cargar covariables futuras para las 24 horas siguientes.
+    #aquí llamamos al modelo de Chronos para que haga la predicción, y luego procesamos la salida para devolverla en el formato esperado por la API.
     try:
         predictor = load_chronos_predictor()
         predictions = predictor.predict(

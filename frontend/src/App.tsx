@@ -28,7 +28,7 @@ function App() {
                   isActive ? "app-nav__link app-nav__link--active" : "app-nav__link"
                 }
               >
-                Dashboard
+                Inicio
               </NavLink>
               <NavLink
                 to="/historico"
@@ -44,7 +44,7 @@ function App() {
                   isActive ? "app-nav__link app-nav__link--active" : "app-nav__link"
                 }
               >
-                Forecast
+                Prediccion
               </NavLink>
               <NavLink
                 to="/models"

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchHistoricalData,
   fetchHistoricalRange,
@@ -32,7 +32,7 @@ function HistoricalPage() {
       const historicalData = await fetchHistoricalData(currentStart, currentEnd, 200);
       setData(historicalData);
     } catch (err) {
-      setHistoricalError(err instanceof Error ? err.message : "Unknown error");
+      setHistoricalError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ function HistoricalPage() {
 
         await loadHistoricalData(initialStart, initialEnd);
       } catch (err) {
-        setHistoricalError(err instanceof Error ? err.message : "Unknown error");
+        setHistoricalError(err instanceof Error ? err.message : "Error desconocido");
         setLoading(false);
       }
     }
@@ -58,7 +58,7 @@ function HistoricalPage() {
     setValidationError(null);
 
     if (start > end) {
-      setValidationError("Start date must be earlier than or equal to end date.");
+      setValidationError("La fecha de inicio debe ser anterior o igual a la fecha de fin.");
       return;
     }
 
@@ -73,7 +73,7 @@ function HistoricalPage() {
         (maxDate && end > maxDate)
       ) {
         setValidationError(
-          `Selected dates must be within available range (${minDate} to ${maxDate}).`
+          `Las fechas seleccionadas deben estar dentro del rango disponible (${minDate} a ${maxDate}).`
         );
         return;
       }
@@ -118,12 +118,12 @@ function HistoricalPage() {
     <div className="page">
       <header className="page__header">
         <div>
-          <h1 className="page__title">Analisis Historico</h1>
+          <h1 className="page__title">Analisis historico</h1>
           <p className="page__subtitle">
             Serie temporal del mercado electrico espanol. Visualizacion del historico de
-            precios en €/MWh.
+            precios en EUR/MWh.
           </p>
-          <p className="page__subtitle">Timezone: {APP_TIMEZONE}</p>
+          <p className="page__subtitle">Zona horaria: {APP_TIMEZONE}</p>
         </div>
 
         {range && (
@@ -184,15 +184,13 @@ function HistoricalPage() {
           </div>
         </div>
 
-        {validationError && (
-          <p className="status status--error">{validationError}</p>
-        )}
+        {validationError && <p className="status status--error">{validationError}</p>}
       </section>
 
       <section className="card">
         <div className="card__header">
           <h2>Grafica de precios</h2>
-          <p>Serie historica con precios horarios del mercado en €/MWh.</p>
+          <p>Serie historica con precios horarios del mercado en EUR/MWh.</p>
         </div>
 
         <div className="chart-wrap">
@@ -208,7 +206,7 @@ function HistoricalPage() {
             </p>
           )}
           {!loading && !historicalError && data.length === 0 && (
-            <p className="status">No historical data available for the selected range.</p>
+            <p className="status">No hay datos historicos disponibles para el rango seleccionado.</p>
           )}
           {!loading && !historicalError && data.length > 0 && (
             <PriceChart data={chartData} showForecastA={false} showForecastB={false} />
@@ -234,7 +232,7 @@ function HistoricalPage() {
           </p>
         )}
         {!loading && !historicalError && data.length === 0 && (
-          <p className="status">No historical data available for the selected range.</p>
+          <p className="status">No hay datos historicos disponibles para el rango seleccionado.</p>
         )}
 
         {!loading && !historicalError && data.length > 0 && (
@@ -250,24 +248,24 @@ function HistoricalPage() {
                 />
               </label>
               <p className="table-controls__meta">
-                Showing {visibleRows.length} of {filteredRows.length} filtered rows
+                Mostrando {visibleRows.length} de {filteredRows.length} filas filtradas
                 (total {data.length}).
               </p>
             </div>
 
             {filteredRows.length === 0 ? (
-              <p className="status">No hay resultados para esa búsqueda.</p>
+              <p className="status">No hay resultados para esa busqueda.</p>
             ) : (
               <div className="table-wrap">
                 <table className="data-table">
                   <thead>
                     <tr>
                       <th>Timestamp</th>
-                      <th>Precio (€/MWh)</th>
-                      <th>Demand Forecast</th>
-                      <th>Wind Forecast</th>
-                      <th>Solar Forecast</th>
-                      <th>Hydro Programmed</th>
+                      <th>Precio (EUR/MWh)</th>
+                      <th>Prevision de demanda</th>
+                      <th>Prevision de viento</th>
+                      <th>Prevision solar</th>
+                      <th>Hidraulica programada</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -288,7 +286,6 @@ function HistoricalPage() {
           </>
         )}
       </section>
-
     </div>
   );
 }

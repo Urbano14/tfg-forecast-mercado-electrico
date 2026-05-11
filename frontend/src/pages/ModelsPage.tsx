@@ -25,7 +25,7 @@ function ModelsPage() {
         setMetrics(metricsResponse.metrics);
         setSelectedModelId((current) => current ?? modelsResponse.models[0]?.id ?? null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         setLoading(false);
       }
@@ -37,6 +37,12 @@ function ModelsPage() {
   const metricsById = useMemo(() => {
     return new Map(metrics.map((metric) => [metric.id, metric]));
   }, [metrics]);
+
+  const modelTypeLabels: Record<string, string> = {
+    baseline: "modelo base",
+    machine_learning: "aprendizaje automatico",
+    foundation_model: "modelo fundacional",
+  };
 
   const cardToneClasses = ["models-card--blue", "models-card--amber", "models-card--teal"];
 
@@ -76,7 +82,6 @@ function ModelsPage() {
 
               return (
                 <button
-                  // This keeps the requested selected glow without altering routing or data flow.
                   className={`models-card models-card--button ${toneClass}${
                     isSelected ? " models-card--selected" : ""
                   }`}
@@ -84,9 +89,11 @@ function ModelsPage() {
                   onClick={() => setSelectedModelId(model.id)}
                   type="button"
                 >
-                  <div className="models-card__tag">{model.type}</div>
+                  <div className="models-card__tag">
+                    {modelTypeLabels[model.type] ?? model.type}
+                  </div>
                   <h3 className="models-card__title">{model.name}</h3>
-                  <p className="models-card__meta">Horizon: {model.horizon_hours}h</p>
+                  <p className="models-card__meta">Horizonte: {model.horizon_hours}h</p>
                   <div className="models-metrics">
                     <div className="models-metrics__item">
                       <span className="models-metrics__label">MAE</span>
