@@ -1,0 +1,29 @@
+{
+  "minimal_variant": {
+    "description": "168h de precios pasados + 24h de variables futuras de calendario",
+    "validation": {
+      "mae_global_24h": 11.948616307889502,
+      "rmse_global_24h": 16.766601668698787
+    },
+    "test": {
+      "mae_global_24h": 15.596024064946448,
+      "rmse_global_24h": 21.352514788949556
+    }
+  },
+  "complete_variant": {
+    "description": "168h de precios pasados + 24h de variables futuras de calendario + 24h de predicciones exogenas futuras",
+    "validation": {
+      "mae_global_24h": 11.796062579508025,
+      "rmse_global_24h": 16.29912045150621
+    },
+    "test": {
+      "mae_global_24h": 14.339166100406421,
+      "rmse_global_24h": 18.99780824206652
+    }
+  },
+  "test_improvement_complete_vs_minimal": {
+    "mae_absolute_improvement": 1.2568579645400272,
+    "rmse_absolute_improvement": 2.354706546883035
+  },
+  "interpretation": "La variante completa mejora sobre la variante minima tanto en validacion como en test, lo que indica que las predicciones exogenas futuras aportan informacion predictiva util.Aun asi, la variante minima sigue siendo necesaria como alternativa operativa cuando no se dispone de variables exogenas futuras."
+}

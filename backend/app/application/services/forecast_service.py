@@ -13,7 +13,11 @@ from app.application.services.historical_service import (
 )
 from app.application.services.model_service import is_supported_model
 from app.schemas.forecast import ForecastPointResponse, ForecastResponse
-from app.infrastructure.ml.xgboost_loader import load_xgboost_model
+from app.infrastructure.ml.xgboost_loader import (
+    load_xgboost_model,
+    load_xgboost_multistep_complete_model,
+    load_xgboost_multistep_minimal_model,
+)
 from app.infrastructure.ml.chronos_loader import load_chronos_predictor
 
 
@@ -122,6 +126,110 @@ XGBOOST_FEATURE_COLS = [
     "month_sin",
     "month_cos",
 ]
+XGBOOST_INPUT_WINDOW = 168
+XGBOOST_HORIZON = 24
+
+
+def _build_price_window_168(
+    requested_date: datetime,
+    price_by_ts: dict[datetime, float],
+) -> np.ndarray:
+    timestamps = [
+        requested_date - timedelta(hours=offset)
+        for offset in range(XGBOOST_INPUT_WINDOW - 1, -1, -1)
+    ]
+
+    if any(ts not in price_by_ts for ts in timestamps):
+        raise HTTPException(
+            status_code=400,
+            detail="Not enough historical price data for XGBoost multi-step (need 168 hours)"
+        )
+
+    price_window = np.asarray([price_by_ts[ts] for ts in timestamps], dtype=float)
+
+    if price_window.shape[0] != XGBOOST_INPUT_WINDOW:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid historical price window for XGBoost multi-step"
+        )
+
+    return price_window
+
+
+def _future_timestamps(
+    requested_date: datetime,
+    horizon: int = XGBOOST_HORIZON,
+) -> list[datetime]:
+    return [requested_date + timedelta(hours=i) for i in range(1, horizon + 1)]
+
+
+def _calendar_features_for_timestamps(
+    timestamps: list[datetime],
+) -> np.ndarray:
+    rows = []
+    for ts in timestamps:
+        hour = ts.hour
+        dayofweek = ts.weekday()
+        month = ts.month
+        is_weekend = 1 if dayofweek >= 5 else 0
+
+        rows.extend(
+            [
+                float(is_weekend),
+                float(np.sin(2 * np.pi * hour / 24)),
+                float(np.cos(2 * np.pi * hour / 24)),
+                float(np.sin(2 * np.pi * dayofweek / 7)),
+                float(np.cos(2 * np.pi * dayofweek / 7)),
+                float(np.sin(2 * np.pi * month / 12)),
+                float(np.cos(2 * np.pi * month / 12)),
+            ]
+        )
+
+    return np.asarray(rows, dtype=float)
+
+
+def _future_exogenous_features(
+    timestamps: list[datetime],
+    exog_by_ts: dict[datetime, dict[str, float]],
+) -> np.ndarray | None:
+    values = []
+    for ts in timestamps:
+        exog = exog_by_ts.get(ts)
+        if exog is None:
+            return None
+
+        current_values = [
+            exog.get("demand_forecast"),
+            exog.get("wind_forecast"),
+            exog.get("solar_forecast"),
+            exog.get("hydro_programmed"),
+        ]
+        if any(value is None for value in current_values):
+            return None
+
+        values.extend(float(value) for value in current_values)
+
+    return np.asarray(values, dtype=float)
+
+
+def _build_xgboost_multistep_input(
+    requested_date: datetime,
+    price_by_ts: dict[datetime, float],
+    exog_by_ts: dict[datetime, dict[str, float]],
+) -> tuple[np.ndarray, str]:
+    price_window = _build_price_window_168(requested_date, price_by_ts)
+    future_ts = _future_timestamps(requested_date)
+    calendar_features = _calendar_features_for_timestamps(future_ts)
+    exogenous_features = _future_exogenous_features(future_ts, exog_by_ts)
+
+    if exogenous_features is not None:
+        X = np.concatenate([price_window, calendar_features, exogenous_features])
+        variant = "complete"
+    else:
+        X = np.concatenate([price_window, calendar_features])
+        variant = "minimal"
+
+    return X.reshape(1, -1), variant
 
 
 def _build_xgboost_features_for_timestamp(
@@ -178,8 +286,8 @@ def generate_xgboost_forecast(
             detail="Date must be aligned to full hour (e.g., 2022-01-01T00:00:00)"
         )
 
-    start = requested_date - timedelta(hours=168)
-    end = requested_date + timedelta(hours=24)
+    start = requested_date - timedelta(hours=XGBOOST_INPUT_WINDOW - 1)
+    end = requested_date + timedelta(hours=XGBOOST_HORIZON)
     rows = get_historical_data_between(db, start, end)
 
     if not rows:
@@ -208,29 +316,53 @@ def generate_xgboost_forecast(
             detail="Requested date not present in historical data for XGBoost"
         )
 
-    model = load_xgboost_model()
+    X, variant = _build_xgboost_multistep_input(requested_date, price_by_ts, exog_by_ts)
 
-    forecast = []
-    for i in range(24):
-        ts = requested_date + timedelta(hours=i + 1)
-        X = _build_xgboost_features_for_timestamp(ts, price_by_ts, exog_by_ts)
-        pred = float(model.predict(X)[0])
-        price_by_ts[ts] = pred
+    if variant == "complete":
+        model = load_xgboost_multistep_complete_model()
+    else:
+        model = load_xgboost_multistep_minimal_model()
 
-        forecast.append(
-            ForecastPointResponse(
-                timestamp=ts,
-                value=pred
-            )
+    pred = model.predict(X)[0]
+    if len(pred) != XGBOOST_HORIZON:
+        raise HTTPException(
+            status_code=500,
+            detail=f"XGBoost multi-step model returned {len(pred)} steps, expected {XGBOOST_HORIZON}"
         )
+
+    future_ts = _future_timestamps(requested_date)
+    forecast = [
+        ForecastPointResponse(
+            timestamp=ts,
+            value=float(value)
+        )
+        for ts, value in zip(future_ts, pred)
+    ]
 
     return ForecastResponse(
     model="xgboost",
     model_type="machine_learning",
     requested_date=requested_date,
-    horizon_hours=24,
+    horizon_hours=XGBOOST_HORIZON,
     forecast=forecast
     )
+
+
+def generate_xgboost_forecast_from_latest_available(
+    db: Session,
+) -> ForecastResponse:
+    data_range = get_historical_data_range(db)
+    if data_range["end"] is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No historical data available for XGBoost"
+        )
+
+    latest_date = data_range["end"]
+    if latest_date.tzinfo is not None:
+        latest_date = latest_date.replace(tzinfo=None)
+
+    return generate_xgboost_forecast(db, latest_date)
 
 
 def generate_chronos_forecast(

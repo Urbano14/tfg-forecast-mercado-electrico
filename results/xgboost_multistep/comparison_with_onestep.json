@@ -1,0 +1,24 @@
+{
+  "note": "El XGBoost one-step anterior y el nuevo XGBoost multi-step resuelven tareas de prediccion distintas, por lo que sus metricas no son directamente comparables.",
+  "previous_xgboost_onestep": {
+    "task": "regresion tabular one-step usando lag_1, lag_24, lag_168 y covariables",
+    "test_mae": 7.370403,
+    "test_rmse": 10.488452
+  },
+  "previous_xgboost_optuna_onestep": {
+    "task": "regresion tabular one-step optimizada con Optuna",
+    "test_mae": 6.656657,
+    "test_rmse": 10.051741
+  },
+  "new_xgboost_multistep_minimal": {
+    "task": "prediccion directa multi-step a 24h usando 168h de historial de precios y 24h de variables futuras de calendario",
+    "test_mae_global_24h": 15.596024064946448,
+    "test_rmse_global_24h": 21.352514788949556
+  },
+  "new_xgboost_multistep_complete": {
+    "task": "prediccion directa multi-step a 24h usando 168h de historial de precios, 24h de variables futuras de calendario y 24h de predictores exogenos futuros",
+    "test_mae_global_24h": 14.339166100406421,
+    "test_rmse_global_24h": 18.99780824206652
+  },
+  "interpretation": "Los modelos one-step obtienen errores puntuales mas bajos, pero no estan alineados con el objetivo final de prediccion a 24h. Los modelos multi-step son mas exigentes porque predicen directamente un horizonte completo de 24h. La variante multi-step completa mejora sobre la variante minima cuando se dispone de variables exogenas futuras."
+}

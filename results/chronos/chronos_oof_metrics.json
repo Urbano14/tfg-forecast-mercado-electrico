@@ -1,0 +1,18 @@
+[
+  {
+    "model": "Chronos2FineTuned",
+    "n_points": 24,
+    "start_timestamp": "2023-12-31T00:00:00",
+    "end_timestamp": "2023-12-31T23:00:00",
+    "mae": 11.656579583485922,
+    "rmse": 14.466649992916135
+  },
+  {
+    "model": "Chronos2ZeroShot",
+    "n_points": 24,
+    "start_timestamp": "2023-12-31T00:00:00",
+    "end_timestamp": "2023-12-31T23:00:00",
+    "mae": 14.390028171539305,
+    "rmse": 17.570703506374766
+  }
+]
