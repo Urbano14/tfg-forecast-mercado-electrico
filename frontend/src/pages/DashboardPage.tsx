@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchHistoricalRange } from "../api/historicalApi";
 import { fetchMetrics, type ModelMetric } from "../api/metricsApi";
 import { fetchModels, type ModelInfo } from "../api/modelsApi";
-import { APP_TIMEZONE, toDateInputValue } from "../utils/date";
+import { APP_TIMEZONE, formatDate } from "../utils/date";
 import { formatNumber } from "../utils/number";
 
 function DashboardPage() {
@@ -75,8 +75,8 @@ function DashboardPage() {
   const bestRmseName =
     (bestRmseMetric && modelById.get(bestRmseMetric.id)?.name) ?? bestRmseMetric?.id ?? "-";
 
-  const rangeStart = range ? toDateInputValue(range.start) : "-";
-  const rangeEnd = range ? toDateInputValue(range.end) : "-";
+  const rangeStart = range ? formatDate(range.start) : "-";
+  const rangeEnd = range ? formatDate(range.end) : "-";
 
   return (
     <div className="page">

@@ -5,7 +5,12 @@ import {
   type HistoricalDataPoint,
 } from "../api/historicalApi";
 import PriceChart from "../components/PriceChart";
-import { APP_TIMEZONE, formatTimestamp, toDateInputValue } from "../utils/date";
+import {
+  APP_TIMEZONE,
+  formatDate,
+  formatTimestamp,
+  toDateInputValue,
+} from "../utils/date";
 import { formatNumber } from "../utils/number";
 
 function HistoricalPage() {
@@ -73,7 +78,7 @@ function HistoricalPage() {
         (maxDate && end > maxDate)
       ) {
         setValidationError(
-          `Las fechas seleccionadas deben estar dentro del rango disponible (${minDate} a ${maxDate}).`
+          `Las fechas seleccionadas deben estar dentro del rango disponible (${formatDate(minDate)} a ${formatDate(maxDate)}).`
         );
         return;
       }
@@ -131,11 +136,11 @@ function HistoricalPage() {
             <div className="range-card__label">Rango disponible</div>
             <div className="range-card__row">
               <span>Inicio:</span>
-              <strong>{range.start}</strong>
+              <strong>{formatDate(range.start)}</strong>
             </div>
             <div className="range-card__row">
               <span>Fin:</span>
-              <strong>{range.end}</strong>
+              <strong>{formatDate(range.end)}</strong>
             </div>
           </div>
         )}
@@ -160,6 +165,7 @@ function HistoricalPage() {
                 setValidationError(null);
               }}
             />
+            <span className="field__hint">Seleccionada: {formatDate(start)}</span>
           </label>
 
           <label className="field">
@@ -174,6 +180,7 @@ function HistoricalPage() {
                 setValidationError(null);
               }}
             />
+            <span className="field__hint">Seleccionada: {formatDate(end)}</span>
           </label>
 
           <div className="field field--actions">

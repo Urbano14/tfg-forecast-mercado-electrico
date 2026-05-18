@@ -8,7 +8,7 @@ import {
 import { fetchMetrics, type ModelMetric } from "../api/metricsApi";
 import { fetchModels, type ModelInfo } from "../api/modelsApi";
 import PriceChart from "../components/PriceChart";
-import { APP_TIMEZONE, toDateInputValue } from "../utils/date";
+import { APP_TIMEZONE, formatDate, toDateInputValue } from "../utils/date";
 import { formatNumber } from "../utils/number";
 
 function ForecastPage() {
@@ -108,6 +108,8 @@ function ForecastPage() {
 
   const availableMinDate = range ? toDateInputValue(range.start) : null;
   const availableMaxDate = range ? toDateInputValue(range.end) : null;
+  const availableMinDateLabel = availableMinDate ? formatDate(availableMinDate) : null;
+  const availableMaxDateLabel = availableMaxDate ? formatDate(availableMaxDate) : null;
   const maxHistoricalEndDate =
     availableMaxDate && availableMaxDate < addDays(historicalStart, 5)
       ? availableMaxDate
@@ -340,6 +342,7 @@ function ForecastPage() {
                 setForecastLoaded(false);
               }}
             />
+            <span className="field__hint">Seleccionada: {formatDate(forecastBaseDate)}</span>
           </label>
 
           <label className="field">
@@ -354,6 +357,7 @@ function ForecastPage() {
                 setForecastLoaded(false);
               }}
             />
+            <span className="field__hint">Seleccionada: {formatDate(historicalStart)}</span>
           </label>
 
           <label className="field">
@@ -368,6 +372,7 @@ function ForecastPage() {
                 setForecastLoaded(false);
               }}
             />
+            <span className="field__hint">Seleccionada: {formatDate(historicalEnd)}</span>
           </label>
 
           <div className="field field--actions">
@@ -375,6 +380,11 @@ function ForecastPage() {
               XGBoost puede usar una variante minima si no hay exogenas futuras;
               Chronos requiere covariables futuras disponibles.
             </span>
+            {availableMinDateLabel && availableMaxDateLabel && (
+              <span className="field__hint">
+                Rango disponible: {availableMinDateLabel} - {availableMaxDateLabel}
+              </span>
+            )}
             <button
               className="btn btn--primary"
               onClick={loadForecastComparison}

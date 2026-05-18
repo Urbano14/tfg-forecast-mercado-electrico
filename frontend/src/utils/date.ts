@@ -1,5 +1,12 @@
 export const APP_TIMEZONE = "Europe/Madrid";
 
+const dateFormatter = new Intl.DateTimeFormat("es-ES", {
+  timeZone: APP_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 const dateTimeFormatter = new Intl.DateTimeFormat("es-ES", {
   timeZone: APP_TIMEZONE,
   year: "numeric",
@@ -14,10 +21,33 @@ function getPart(parts: Intl.DateTimeFormatPart[], type: string): string {
   return parts.find((part) => part.type === type)?.value ?? "";
 }
 
-export function formatTimestamp(ts: string): string {
-  const date = new Date(ts);
+function parseDateValue(value: string | Date): Date | null {
+  const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
+
+export function formatDate(value: string | Date): string {
+  const date = parseDateValue(value);
+  if (!date) {
+    return "-";
+  }
+
+  const parts = dateFormatter.formatToParts(date);
+  const day = getPart(parts, "day");
+  const month = getPart(parts, "month");
+  const year = getPart(parts, "year");
+
+  return `${day}/${month}/${year}`;
+}
+
+export function formatTimestamp(value: string | Date): string {
+  const date = parseDateValue(value);
+  if (!date) {
     return "-";
   }
 
@@ -59,8 +89,8 @@ export function formatLocalDateTimeInput(value: string): string {
 
   const [date, time] = value.split("T");
   if (!time) {
-    return date;
+    return formatDate(date);
   }
 
-  return `${date} ${time.slice(0, 5)}`;
+  return `${formatDate(date)} ${time.slice(0, 5)}`;
 }
