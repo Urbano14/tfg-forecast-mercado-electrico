@@ -13,4 +13,4 @@ sqlalchemy
 pydantic-settings
 joblib
 psycopg2-binary
-autogluon.timeseries
+autogluon.timeseries==1.5.0
