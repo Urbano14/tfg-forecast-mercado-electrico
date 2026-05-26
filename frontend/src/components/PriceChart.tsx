@@ -1,3 +1,5 @@
+//Componente  que pinta la gráfica de precios en el frontend
+
 import {
   CartesianGrid,
   Legend,
@@ -10,6 +12,9 @@ import {
 } from "recharts";
 import { formatTimestamp } from "../utils/date";
 
+// Punto que recibe la gráfica.
+// timestamp es obligatorio porque se usa como eje X.
+// price representa el histórico real y forecastA/forecastB las dos posibles predicciones comparadas.
 interface ChartPoint {
   timestamp: string;
   price?: number;
@@ -17,6 +22,7 @@ interface ChartPoint {
   forecastB?: number;
 }
 
+// data contiene todos los puntos a pintar y los flags permiten mostrar/ocultar cada línea.
 interface Props {
   data: ChartPoint[];
   showHistorical?: boolean;
@@ -24,6 +30,7 @@ interface Props {
   showForecastB?: boolean;
 }
 
+// Tipo simplificado de las props que Recharts pasa al tooltip personalizado.
 interface CustomTooltipProps {
   active?: boolean;
   label?: string | number;
@@ -41,6 +48,7 @@ function PriceChart({
   showForecastA = true,
   showForecastB = true,
 }: Props) {
+  // Convierte los nombres internos de las series en etiquetas legibles para el usuario.
   const formatSeriesLabel = (value: string) => {
     if (value === "price") {
       return "Precio historico (EUR/MWh)";
@@ -57,6 +65,7 @@ function PriceChart({
     return value;
   };
 
+  // Formatea los valores numéricos del tooltip con dos decimales y unidad.
   const formatTooltipValue = (value: unknown) => {
     if (typeof value === "number" && Number.isFinite(value)) {
       return `${value.toFixed(2)} EUR/MWh`;
@@ -65,6 +74,7 @@ function PriceChart({
     return "-";
   };
 
+  // Muestra la fecha formateada y los valores de las series visibles en ese timestamp.
   const CustomTooltip = ({ active, label, payload }: CustomTooltipProps) => {
     if (!active || !payload?.length) {
       return null;
@@ -95,10 +105,13 @@ function PriceChart({
   };
 
   return (
+    // Contenedor de la gráfica. Ocupa todo el ancho disponible y mantiene una altura fija.
     <div style={{ width: "100%", height: 400 }}>
       <ResponsiveContainer>
         <LineChart data={data}>
           <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" />
+
+          {/* Eje X: usa timestamp y lo formatea para mostrar fechas legibles. */}
           <XAxis
             dataKey="timestamp"
             tickFormatter={(value) => formatTimestamp(value)}
@@ -108,6 +121,8 @@ function PriceChart({
             tickLine={{ stroke: "rgba(255,255,255,0.08)" }}
             axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
           />
+
+          {/* Eje Y: representa el precio del mercado eléctrico en EUR/MWh. */}
           <YAxis
             tick={{ fontSize: 12, fill: "#94a3b8" }}
             tickLine={{ stroke: "rgba(255,255,255,0.08)" }}
@@ -120,11 +135,16 @@ function PriceChart({
               fontSize: 12,
             }}
           />
+
           <Tooltip
             content={<CustomTooltip />}
             cursor={{ stroke: "rgba(56, 189, 248, 0.22)", strokeWidth: 1 }}
           />
+
+          {/* Leyenda de las líneas visibles. */}
           <Legend wrapperStyle={{ color: "#e2e8f0", paddingTop: 12 }} />
+
+          {/* Línea del histórico real. Se pinta si showHistorical está activo. */}
           {showHistorical && (
             <Line
               type="monotone"
@@ -136,6 +156,8 @@ function PriceChart({
               style={{ filter: "drop-shadow(0 0 4px #38bdf8)" }}
             />
           )}
+
+          {/* Línea de la primera predicción. Se pinta discontinua para distinguirla del histórico. */}
           {showForecastA && (
             <Line
               type="monotone"
@@ -148,6 +170,8 @@ function PriceChart({
               style={{ filter: "drop-shadow(0 0 4px #f59e0b)" }}
             />
           )}
+
+          {/* Línea de la segunda predicción, usada para comparar dos modelos. */}
           {showForecastB && (
             <Line
               type="monotone"

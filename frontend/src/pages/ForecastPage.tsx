@@ -12,27 +12,36 @@ import { APP_TIMEZONE, formatDate, toDateInputValue } from "../utils/date";
 import { formatNumber } from "../utils/number";
 
 function ForecastPage() {
+  // Rango total disponible en backend. Se usa para limitar los inputs de fecha.
   const [range, setRange] = useState<{ start: string; end: string } | null>(null);
+  // Predicciones devueltas para el Modelo A y Modelo B.
   const [forecastA, setForecastA] = useState<ForecastPoint[]>([]);
   const [forecastB, setForecastB] = useState<ForecastPoint[]>([]);
+  // Historico usado como contexto visual en la grafica.
   const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
+  // Catalogo de modelos y metricas visibles que vienen del backend.
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [metrics, setMetrics] = useState<ModelMetric[]>([]);
 
+  // Errores separados para saber si falla forecast, historico o carga de metricas/modelos.
   const [forecastError, setForecastError] = useState<string | null>(null);
   const [historicalError, setHistoricalError] = useState<string | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
+  // Estados de carga separados para mostrar mensajes concretos en cada bloque de la pagina.
   const [loadingModels, setLoadingModels] = useState(true);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [historicalLoading, setHistoricalLoading] = useState(false);
 
+  // Seleccion del usuario: dos modelos, rango historico y fecha base de prediccion.
   const [selectedModelA, setSelectedModelA] = useState("seasonal_naive");
   const [selectedModelB, setSelectedModelB] = useState("seasonal_naive");
   const [historicalStart, setHistoricalStart] = useState("2022-01-01");
   const [historicalEnd, setHistoricalEnd] = useState("2022-01-04");
   const [forecastBaseDate, setForecastBaseDate] = useState("2022-01-03");
 
+  // Indica si ya se ha cargado una prediccion valida.
   const [forecastLoaded, setForecastLoaded] = useState(false);
+  // Guarda la ultima configuracion usada para detectar si el usuario cambio algo despues de cargar.
   const [lastForecastParams, setLastForecastParams] = useState<{
     modelA: string;
     modelB: string;
@@ -41,12 +50,14 @@ function ForecastPage() {
     historicalEnd: string;
   } | null>(null);
 
+  // Al montar la pagina, carga en paralelo rango disponible, modelos y metricas.
   useEffect(() => {
     async function loadData() {
       try {
         setLoadingModels(true);
         setMetricsError(null);
 
+        // Promise.all lanza las tres peticiones a la vez para no esperar una detras de otra.
         const [rangeResponse, modelsResponse, metricsResponse] = await Promise.all([
           fetchHistoricalRange(),
           fetchModels(),
@@ -66,11 +77,13 @@ function ForecastPage() {
     loadData();
   }, []);
 
+  // Convierte una fecha YYYY-MM-DD en Date sin depender del parseo automatico del navegador.
   function parseDateOnly(dateStr: string): Date {
     const [year, month, day] = dateStr.split("-").map(Number);
     return new Date(year, month - 1, day);
   }
 
+  // Suma dias a una fecha y devuelve de nuevo formato YYYY-MM-DD para inputs date.
   function addDays(dateStr: string, days: number): string {
     const date = parseDateOnly(dateStr);
     date.setDate(date.getDate() + days);
@@ -80,12 +93,14 @@ function ForecastPage() {
     return `${year}-${month}-${day}`;
   }
 
+  // Calcula la diferencia en dias. Se usa para limitar el historico a maximo 5 dias.
   function diffDays(startDateStr: string, endDateStr: string): number {
     const start = parseDateOnly(startDateStr);
     const end = parseDateOnly(endDateStr);
     return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   }
 
+  // Extrae un mensaje legible de errores.
   function getErrorMessage(err: unknown): string {
     if (typeof err === "object" && err !== null) {
       const detail = "detail" in err ? err.detail : null;
@@ -106,15 +121,18 @@ function ForecastPage() {
     return "Error desconocido";
   }
 
+  // Convierte el rango disponible del backend al formato que entienden los inputs type=date.
   const availableMinDate = range ? toDateInputValue(range.start) : null;
   const availableMaxDate = range ? toDateInputValue(range.end) : null;
   const availableMinDateLabel = availableMinDate ? formatDate(availableMinDate) : null;
   const availableMaxDateLabel = availableMaxDate ? formatDate(availableMaxDate) : null;
+  // El historico no puede superar 5 dias ni ir mas alla del ultimo dato disponible.
   const maxHistoricalEndDate =
     availableMaxDate && availableMaxDate < addDays(historicalStart, 5)
       ? availableMaxDate
       : addDays(historicalStart, 5);
 
+  // Valida la configuracion antes de llamar al backend. Si devuelve null, todo es correcto.
   function validateForecastDates(): string | null {
     if (availableMinDate && historicalStart < availableMinDate) {
       return "El inicio del histórico no puede ser anterior al primer dato disponible.";
@@ -147,6 +165,7 @@ function ForecastPage() {
     return null;
   }
 
+  // Funcion principal de la pagina: valida, pide forecast A/B y carga historico de contexto.
   async function loadForecastComparison() {
     const validationMessage = validateForecastDates();
     if (validationMessage) {
@@ -158,16 +177,20 @@ function ForecastPage() {
       setForecastError(null);
       setHistoricalError(null);
       setForecastLoading(true);
+      // El backend espera una fecha con hora. Para el input date se usa la hora 00:00.
       const baseDateIso = `${forecastBaseDate}T00:00:00`;
+      // Primera llamada: forecast del Modelo A.
       const responseA = await fetchForecast(baseDateIso, selectedModelA);
       const forecastForA = responseA.forecast;
 
+      // Si ambos modelos son iguales, se reutiliza la prediccion A y se evita una llamada duplicada.
       let forecastForB: ForecastPoint[] = forecastForA;
       if (selectedModelB !== selectedModelA) {
         const responseB = await fetchForecast(baseDateIso, selectedModelB);
         forecastForB = responseB.forecast;
       }
 
+      // Guarda predicciones y recuerda la configuracion exacta con la que se cargaron.
       setForecastA(forecastForA);
       setForecastB(forecastForB);
       setForecastLoaded(true);
@@ -179,6 +202,7 @@ function ForecastPage() {
         historicalEnd,
       });
 
+      // Despues del forecast, carga el historico seleccionado para pintarlo como contexto.
       setHistoricalLoading(true);
       try {
         const historicalResponse = await fetchHistoricalData(
@@ -201,6 +225,7 @@ function ForecastPage() {
     }
   }
 
+  // Mapas auxiliares para localizar metricas/modelos por id sin recorrer arrays continuamente.
   const metricsById = useMemo(() => {
     return new Map(metrics.map((metric) => [metric.id, metric]));
   }, [metrics]);
@@ -214,18 +239,21 @@ function ForecastPage() {
   const selectedModelInfoA = modelById.get(selectedModelA);
   const selectedModelInfoB = modelById.get(selectedModelB);
 
+  // Traduce tipos internos del backend a etiquetas mas claras para la interfaz.
   const modelTypeLabels: Record<string, string> = {
     baseline: "modelo base",
     machine_learning: "aprendizaje automatico",
     foundation_model: "modelo fundacional",
   };
 
+  // Une historico, forecast A y forecast B por timestamp para pasarselo todo a PriceChart.
   const chartData = useMemo(() => {
     const byTimestamp = new Map<
       string,
       { timestamp: string; price?: number; forecastA?: number; forecastB?: number }
     >();
 
+    // Primero inserta el precio historico.
     historicalData.forEach((row) => {
       byTimestamp.set(row.timestamp, {
         timestamp: row.timestamp,
@@ -233,6 +261,7 @@ function ForecastPage() {
       });
     });
 
+    // Despues añade la prediccion A al mismo timestamp si ya existe.
     forecastA.forEach((row) => {
       const existing = byTimestamp.get(row.timestamp);
 
@@ -246,6 +275,7 @@ function ForecastPage() {
       }
     });
 
+    // Depues añade la prediccion B.
     forecastB.forEach((row) => {
       const existing = byTimestamp.get(row.timestamp);
 
@@ -259,11 +289,13 @@ function ForecastPage() {
       }
     });
 
+    // Recharts necesita los puntos ordenados cronologicamente.
     return Array.from(byTimestamp.values()).sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   }, [forecastA, forecastB, historicalData]);
 
+  // Detecta si el usuario ha cambiado filtros/modelos despues de cargar la ultima prediccion.
   const forecastIsStale =
     !!lastForecastParams &&
     (lastForecastParams.modelA !== selectedModelA ||
@@ -284,6 +316,7 @@ function ForecastPage() {
         </div>
       </header>
 
+      {/* Bloque principal de configuracion: modelos, fechas y boton de carga. */}
       <section className="card">
         <div className="card__header">
           <h2>Configuracion de prediccion</h2>
@@ -420,6 +453,7 @@ function ForecastPage() {
         )}
       </section>
 
+      {/* Bloque de metricas: muestra MAE/RMSE de los modelos seleccionados. */}
       <section className="card">
         <div className="card__header">
           <h2>Metricas por modelo</h2>
@@ -489,6 +523,7 @@ function ForecastPage() {
         )}
       </section>
 
+      {/* Bloque de grafica: pinta historico + prediccion A + prediccion B. */}
       <section className="card">
         <div className="card__header">
           <h2>Grafica de prediccion</h2>

@@ -1,3 +1,5 @@
+# Centraliza la lista de modelos que el backend reconoce.
+
 AVAILABLE_MODELS = [
     {
         "id": "seasonal_naive",

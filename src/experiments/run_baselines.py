@@ -9,11 +9,11 @@ from src.modelos.naive import NaiveModel
 from src.modelos.seasonal_naive import SeasonalNaiveModel
 
 
-RESULTS_PATH = Path("results/baselines_results.csv") # Path donde se guardarán los resultados de las evaluaciones de los modelos.
-RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True) # Crear el directorio "results" si no existe.
-
-# Función para ejecutar un modelo específico en una serie temporal dada y evaluar su rendimiento utilizando backtesting.
+RESULTS_PATH = Path("results/baselines_results.csv") #
+RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True) 
+#función auxiliar para evaluar cualquier modelo baseline que tenga el método forecast(history, horizon)
 def run_one(name: str, model, series, dataset_name: str, horizon=24, stride=24): 
+    #llama a backtesting
     res = rolling_origin_backtest( 
         series=series,
         model=model,
@@ -27,7 +27,7 @@ def run_one(name: str, model, series, dataset_name: str, horizon=24, stride=24):
         f"MAE={res.mae:.4f} | "
         f"RMSE={res.rmse:.4f}"
     )
-
+    #devuelve un diccionario con los resultados para luego guardarlos en un DataFrame
     return {
         "dataset": dataset_name,
         "model": name,
@@ -38,27 +38,26 @@ def run_one(name: str, model, series, dataset_name: str, horizon=24, stride=24):
         "rmse": res.rmse,
     }
 
-# Función principal que carga los datos, realiza la división temporal, ejecuta los modelos de referencia y guarda los resultados en un archivo CSV.
+
 def main():
     df = load_data()
     train, val, test = temporal_split(df)
 
-    results = []
+    results = [] #Lista de diccionarios para guardar los resultados de cada modelo.
 
     print("=== Running Baselines ===")
 
-    
-    results.append(run_one("Naive", NaiveModel(), val["price"], "validation"))
+    # llama a run_one que ejecuta backtesting sobre naive y SN para validación y test, y guarda los resultados en una lista de diccionarios
+    results.append(run_one("Naive", NaiveModel(), val["price"], "validation")) 
     results.append(run_one("SeasonalNaive(24)", SeasonalNaiveModel(24), val["price"], "validation"))
 
-    
     results.append(run_one("Naive", NaiveModel(), test["price"], "test"))
     results.append(run_one("SeasonalNaive(24)", SeasonalNaiveModel(24), test["price"], "test"))
 
-    results_df = pd.DataFrame(results)
-    results_df.to_csv(RESULTS_PATH, index=False)
+    results_df = pd.DataFrame(results) # Convierte la lista de diccionarios en un DataFrame para facilitar su análisis posterior
+    results_df.to_csv(RESULTS_PATH, index=False) 
 
-    print(f"\nResults saved to {RESULTS_PATH}")
+    print(f"\nResults saved to {RESULTS_PATH}") 
 
 
 if __name__ == "__main__":

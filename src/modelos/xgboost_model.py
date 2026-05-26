@@ -21,14 +21,13 @@ FEATURE_COLS = [
     "month_cos",
 ]
 
-
+#no aprende una única fórmula como la regresión lineal, sino que construye muchos árboles pequeños, 
+#uno detrás de otro, y cada árbol intenta corregir los errores que han dejado los anteriores.
 class XGBoostModel:
-    """
-    Modelo XGBoost supervisado para forecasting tabular.
-    """
-
-    def __init__(self):
+    
+    def __init__(self): 
         self.model = XGBRegressor(
+            #Estos hiperparámetros se han elegido manuealmente, no con Optuna, eso se hace luego.
             n_estimators=300,
             max_depth=6,
             learning_rate=0.05,

@@ -1,6 +1,7 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
 
+  // Mapeo de mensajes de error específicos de la API a traducciones en español. 
 const API_ERROR_TRANSLATIONS: Record<string, string> = {
   "start must be earlier than end": "La fecha de inicio debe ser anterior a la fecha de fin.",
   "Date must be aligned to full hour (e.g., 2022-01-01T00:00:00)":
@@ -41,6 +42,7 @@ const API_ERROR_TRANSLATIONS: Record<string, string> = {
     "Chronos devolvio una prediccion vacia.",
 };
 
+
 function translateApiErrorMessage(message: string): string {
   if (API_ERROR_TRANSLATIONS[message]) {
     return API_ERROR_TRANSLATIONS[message];
@@ -64,8 +66,9 @@ function translateApiErrorMessage(message: string): string {
   return message;
 }
 
+// Función genérica para hacer peticiones a la API. Es genérica (<T>) para que cada llamada indique el tipo de dato que espera recibir.
 export async function apiFetch<T>(endpoint: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`);
+  const response = await fetch(`${API_BASE_URL}${endpoint}`); // Petición a la API usando fetch, uniendo la URL base con el endpoint específico.
 
   if (!response.ok) {
     let detail = "";
@@ -79,6 +82,6 @@ export async function apiFetch<T>(endpoint: string): Promise<T> {
 
     throw new Error(detail || `Error de API: ${response.status}`);
   }
-
+  //Si la respuesta fue correcta, devuelve el JSON ya convertido al tipo esperado T.
   return response.json();
 }

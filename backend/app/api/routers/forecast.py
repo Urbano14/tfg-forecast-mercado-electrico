@@ -14,6 +14,7 @@ from app.schemas.forecast import ForecastResponse
 
 router = APIRouter(prefix="/forecast", tags=["forecast"])
 
+# Rutas para obtener predicciones eligiendo entre los modelos
 
 @router.get("", response_model=ForecastResponse)
 @router.get("/", response_model=ForecastResponse)

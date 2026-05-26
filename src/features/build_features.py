@@ -5,12 +5,9 @@ import pandas as pd
 
 DATA_PATH = Path("data/processed/spot_es_with_exogenous.parquet")
 
-
+# Carga la serie temporal desde el archivo Parquet y ordena por timestamp
 def load_series() -> pd.DataFrame:
-    """
-    Carga la serie temporal fusionada (precio + exógenas)
-    y asegura orden temporal correcto.
-    """
+    
     df = pd.read_parquet(DATA_PATH)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.sort_values("timestamp").reset_index(drop=True)
@@ -18,21 +15,12 @@ def load_series() -> pd.DataFrame:
 
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Construye un dataset supervisado para forecasting a partir de:
-    - precio
-    - variables exógenas
-    - calendario
-
-    Variables creadas:
-    - Lags del precio
-    - Variables temporales cíclicas
-    - Indicador de fin de semana
-    - Variables exógenas contemporáneas
-    """
+    
     df = df.copy()
 
-   
+   #Construye todas las características necesarias para el modelo: lags, variables de calendario y las transformaciones cíclicas.
+    
+    # Lags = Precios anteriores (1h, 24h, 168h)
     df["lag_1"] = df["price"].shift(1)
     df["lag_24"] = df["price"].shift(24)
     df["lag_168"] = df["price"].shift(168)
@@ -56,7 +44,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
    
     df = df.dropna().reset_index(drop=True)
 
-    
+    #Columnas que tendra el dataframe final
     cols = [
         "timestamp",
         "price",
@@ -75,14 +63,14 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "month_sin",
         "month_cos",
     ]
-
-    df = df[cols]
+    
+    df = df[cols] 
     return df
 
 
 if __name__ == "__main__":
     df = load_series()
-    df_feat = build_features(df)
+    df_feat = build_features(df) 
 
     print(df_feat.head())
     print("\nColumnas:")
@@ -93,3 +81,5 @@ if __name__ == "__main__":
     print("\nMissing:")
     print(df_feat.isna().sum())
 
+# Al ejecutar este script, se cargará la serie temporal desde el archivo Parquet Y se construirán las características necesarias.
+#Pero no se guardará el resultado en un nuevo archivo, ya que esto se hará en la siguiente etapa del pipeline.

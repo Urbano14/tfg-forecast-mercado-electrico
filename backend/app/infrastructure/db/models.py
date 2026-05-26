@@ -2,6 +2,8 @@ from sqlalchemy import Column, DateTime, Float, Integer
 
 from app.infrastructure.db.base import Base
 
+#define el modelo ORM de SQLAlchemy para la tabla principal de la base de datos.
+#Define cómo se representa en Python la tabla:market_data
 
 class MarketData(Base):
     __tablename__ = "market_data"

@@ -3,10 +3,7 @@ import numpy as np
 
 
 def mae(y_true, y_pred) -> float:
-    """
-    Mean Absolute Error (MAE).
-    Devuelve el error medio absoluto en las mismas unidades que la variable (€/MWh).
-    """
+    
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
 
@@ -17,10 +14,6 @@ def mae(y_true, y_pred) -> float:
 
 
 def rmse(y_true, y_pred) -> float:
-    """
-    Root Mean Squared Error (RMSE).
-    Devuelve la raíz del error cuadrático medio en las mismas unidades que la variable (€/MWh).
-    """
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
 

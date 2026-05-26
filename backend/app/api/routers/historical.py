@@ -9,12 +9,13 @@ from app.application.services.historical_service import (
     get_historical_data_range,
 )
 
+# Rutas para obtener datos históricos.
 router = APIRouter(prefix="/historical", tags=["historical"])
-
-
 
 @router.get("", response_model=list[HistoricalDataResponse])
 @router.get("/", response_model=list[HistoricalDataResponse])
+
+# Obtener datos históricos entre dos fechas, con un límite opcional de resultados.
 def get_historical_data(
     start: datetime,
     end: datetime,

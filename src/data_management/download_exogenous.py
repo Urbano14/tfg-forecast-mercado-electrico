@@ -32,15 +32,14 @@ INDICATORS = {
 
 
 
-def parse_iso_local(s: str) -> datetime:
+def parse_iso_local(s: str) -> datetime: 
     return datetime.strptime(s, "%Y-%m-%dT%H:%M")
 
-
-def to_iso_local(dt: datetime) -> str:
+ 
+def to_iso_local(dt: datetime) -> str: 
     return dt.strftime("%Y-%m-%dT%H:%M")
-
-
-def esios_get(token: str, indicator_id: int, params: dict) -> dict:
+#Lo mismo que en download_spot_es pero con indicador dinámico, es decir, se le pasa el indicator_id como argumento para poder usar esta función con cualquier indicador de ESIOS.
+def esios_get(token: str, indicator_id: int, params: dict) -> dict: 
     url = f"https://api.esios.ree.es/indicators/{indicator_id}"
     headers = {
         "Accept": "application/json; application/vnd.esios-api-v2+json",
@@ -52,11 +51,10 @@ def esios_get(token: str, indicator_id: int, params: dict) -> dict:
     r.raise_for_status()
     return r.json()
 
-
-def values_to_df(payload: dict, value_name: str) -> pd.DataFrame:
-    """
-    Convierte la respuesta de ESIOS a un DataFrame homogéneo.
-    """
+#Lo mismo que en download_spot_es pero se le pasa el value_name como argumento 
+# para poder usar esta función con cualquier indicador de ESIOS y no solo con el precio spot diario.
+def values_to_df(payload: dict, value_name: str) -> pd.DataFrame: #Lo m
+    
     values = payload.get("indicator", {}).get("values", [])
     if not values:
         return pd.DataFrame(columns=["timestamp_utc", value_name])
@@ -65,7 +63,7 @@ def values_to_df(payload: dict, value_name: str) -> pd.DataFrame:
 
     
     df = df.rename(columns={"datetime_utc": "timestamp_utc", "value": value_name})
-
+    
     if "timestamp_utc" not in df.columns or value_name not in df.columns:
         return pd.DataFrame(columns=["timestamp_utc", value_name])
 
@@ -77,7 +75,7 @@ def values_to_df(payload: dict, value_name: str) -> pd.DataFrame:
 
     return df
 
-
+#Descarga un solo indicador, uno de solar, eolico... Devuelve el dataframe del indicador descargado.
 def download_one_indicator(
     token: str,
     indicator_id: int,
@@ -114,10 +112,10 @@ def download_one_indicator(
 
     df = pd.concat(all_chunks, ignore_index=True)
     df = df.drop_duplicates(subset=["timestamp_utc"]).sort_values("timestamp_utc").reset_index(drop=True)
-    return df
+    return df #
 
 
-
+# Descarga todos los indicadores definidos en INDICATORS, los guarda por separado y luego los mergea en un solo DataFrame unificado.
 def main():
     load_dotenv()
 

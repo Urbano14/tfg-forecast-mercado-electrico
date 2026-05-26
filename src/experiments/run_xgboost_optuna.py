@@ -15,8 +15,10 @@ RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
 MODEL_PATH = Path("models/xgboost/xgboost_optuna_exogenous.pkl")
 MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+#Una prueba concreta de Optuna. Optuna llama muchas veces a objective().
 
 def objective(trial, X_train, y_train, X_val, y_val):
+    #trial.suggest_*() es la función que Optuna usa para generar valores de hiperparámetros
     params = {
         "n_estimators": trial.suggest_int("n_estimators", 100, 600),
         "max_depth": trial.suggest_int("max_depth", 3, 10),
@@ -32,21 +34,21 @@ def objective(trial, X_train, y_train, X_val, y_val):
     model.fit(X_train, y_train)
 
     preds = model.predict(X_val)
-    return mae(y_val, preds)
+    return mae(y_val, preds) #Optuna intenta minimizar ese valor. Es decir: el mejor modelo será el que tenga menor MAE en validación.
 
 
 def main():
     print("=== XGBoost + Optuna ===")
 
-    # Carga del dataset fusionado (precio + exógenas)
     df = load_series()
     df = build_features(df)
 
-    # Split temporal
     train, val, test = temporal_split(df)
 
     feature_cols = [c for c in df.columns if c not in ["timestamp", "price"]]
 
+    #X_train, X_val, X_test: lags, exógenas y calendario.
+    #y_train, y_val, y_test: precio real.
     X_train = train[feature_cols]
     y_train = train["price"]
 
@@ -56,25 +58,27 @@ def main():
     X_test = test[feature_cols]
     y_test = test["price"]
 
-    # Búsqueda de hiperparámetros
+    #Esto crea un estudio de Optuna cuyo objetivo es minimizar una métrica. 
+    #En cada llamada, propone una combinación distinta de hiperparámetros.
     study = optuna.create_study(direction="minimize")
-    study.optimize(
+    study.optimize( #Cada trial entrena un XGBoost con train, predice sobre validación y mide el MAE. 
         lambda trial: objective(trial, X_train, y_train, X_val, y_val),
         n_trials=50
+        #Al final se queda con la combinación que menor MAE tenga en validación.
     )
 
     print("Best params:", study.best_params)
 
-    # Entrenar mejor modelo
+    # Generar modelo con mejores hiperparámetros
     best_model = XGBRegressor(
         **study.best_params,
         random_state=42,
         n_jobs=-1,
         objective="reg:squarederror",
     )
-    best_model.fit(X_train, y_train)
+    best_model.fit(X_train, y_train) #Lo entrena
 
-    preds_val = best_model.predict(X_val)
+    preds_val = best_model.predict(X_val) 
     preds_test = best_model.predict(X_test)
 
     val_mae = mae(y_val, preds_val)

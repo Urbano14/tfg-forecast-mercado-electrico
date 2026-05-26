@@ -1,3 +1,6 @@
+// Esta página muestra el análisis histórico de precios del mercado eléctrico español.
+// Permite seleccionar un rango de fechas, visualizar la serie temporal de precios y consultar los datos en una tabla.
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchHistoricalData,
@@ -14,21 +17,36 @@ import {
 import { formatNumber } from "../utils/number";
 
 function HistoricalPage() {
+  // Rango inicial que se carga al abrir la pagina de historico.
   const initialStart = "2022-01-01";
   const initialEnd = "2022-01-04";
+
+  // Numero maximo de filas visibles en la tabla para no saturar la interfaz.
   const TABLE_LIMIT = 50;
 
+  // Rango total disponible en backend/base de datos.
   const [range, setRange] = useState<{ start: string; end: string } | null>(null);
+
+  // Datos historicos cargados para el rango seleccionado.
   const [data, setData] = useState<HistoricalDataPoint[]>([]);
 
+  // historicalError: errores al pedir datos al backend.
+  // validationError: errores detectados en frontend antes de llamar al backend.
   const [historicalError, setHistoricalError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Estado de carga para mostrar mensajes/spinners mientras se consultan datos.
   const [loading, setLoading] = useState(true);
+
+  // Texto usado para filtrar la tabla por timestamp.
   const [tableQuery, setTableQuery] = useState("");
 
+  // Fechas seleccionadas en los inputs de fecha.
   const [start, setStart] = useState(initialStart);
   const [end, setEnd] = useState(initialEnd);
 
+  // Funcion reutilizable para cargar datos historicos desde el backend.
+  // Recibe fecha de inicio y fin, llama a /historical y guarda la respuesta en el estado data.
   const loadHistoricalData = useCallback(async (currentStart: string, currentEnd: string) => {
     try {
       setLoading(true);
@@ -43,6 +61,7 @@ function HistoricalPage() {
     }
   }, []);
 
+  // Al montar la pagina, primero se carga el rango disponible y despues un historico inicial.
   useEffect(() => {
     async function initializePage() {
       try {
@@ -59,14 +78,18 @@ function HistoricalPage() {
     initializePage();
   }, [loadHistoricalData]);
 
+  // Se ejecuta al pulsar el boton de cargar historico.
+  // Valida fechas en frontend antes de llamar al backend.
   function handleLoadClick() {
     setValidationError(null);
 
+    // En formato YYYY-MM-DD se pueden comparar strings para comprobar orden temporal.
     if (start > end) {
       setValidationError("La fecha de inicio debe ser anterior o igual a la fecha de fin.");
       return;
     }
 
+    // Si conocemos el rango real disponible, bloqueamos peticiones fuera de ese rango.
     if (range) {
       const minDate = toDateInputValue(range.start);
       const maxDate = toDateInputValue(range.end);
@@ -87,6 +110,7 @@ function HistoricalPage() {
     loadHistoricalData(start, end);
   }
 
+  // Adapta los datos historicos al formato que espera PriceChart.
   const chartData = useMemo(() => {
     const byTimestamp = new Map<string, { timestamp: string; price?: number }>();
 
@@ -97,11 +121,13 @@ function HistoricalPage() {
       });
     });
 
+    // La grafica recibe los puntos ordenados cronologicamente.
     return Array.from(byTimestamp.values()).sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   }, [data]);
 
+  // Filtra las filas de la tabla usando el texto introducido por el usuario.
   const filteredRows = useMemo(() => {
     const query = tableQuery.trim().toLowerCase();
     if (!query) {
@@ -115,6 +141,7 @@ function HistoricalPage() {
     });
   }, [data, tableQuery]);
 
+  // Limita el numero de filas renderizadas en la tabla.
   const visibleRows = useMemo(() => {
     return filteredRows.slice(0, TABLE_LIMIT);
   }, [filteredRows]);
@@ -131,6 +158,7 @@ function HistoricalPage() {
           <p className="page__subtitle">Zona horaria: {APP_TIMEZONE}</p>
         </div>
 
+        {/* Tarjeta con el rango temporal disponible en la base de datos. */}
         {range && (
           <div className="range-card">
             <div className="range-card__label">Rango disponible</div>
@@ -158,6 +186,7 @@ function HistoricalPage() {
             <input
               type="date"
               value={start}
+              // min y max evitan seleccionar fechas fuera del rango disponible.
               min={range ? toDateInputValue(range.start) : undefined}
               max={range ? toDateInputValue(range.end) : undefined}
               onChange={(e) => {
@@ -216,6 +245,7 @@ function HistoricalPage() {
             <p className="status">No hay datos historicos disponibles para el rango seleccionado.</p>
           )}
           {!loading && !historicalError && data.length > 0 && (
+            // En esta pagina solo se pinta historico; las lineas de forecast se desactivan.
             <PriceChart data={chartData} showForecastA={false} showForecastB={false} />
           )}
         </div>

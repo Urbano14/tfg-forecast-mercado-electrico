@@ -5,8 +5,11 @@ import ModelsPage from "./pages/ModelsPage";
 import HistoricalPage from "./pages/historicalPage";
 import "./App.css";
 
+// Componente raíz del frontend. Solo se define la estructura general,
+// la navegación superior y qué página se muestra según la ruta actual.
 function App() {
   return (
+    // BrowserRouter permite cambiar entre /, /historico, /forecast y /models sin recargar toda la página.
     <BrowserRouter>
       <div className="app-shell">
         <div className="app-container">
@@ -20,6 +23,8 @@ function App() {
                 <span className="app-nav__brand-sub">Mercado electrico</span>
               </div>
             </div>
+
+            {/* Enlaces de navegación entre las páginas principales. */}
             <div className="app-nav__links">
               <NavLink
                 to="/"
@@ -30,6 +35,7 @@ function App() {
               >
                 Inicio
               </NavLink>
+
               <NavLink
                 to="/historico"
                 className={({ isActive }) =>
@@ -38,6 +44,7 @@ function App() {
               >
                 Historico
               </NavLink>
+
               <NavLink
                 to="/forecast"
                 className={({ isActive }) =>
@@ -46,6 +53,7 @@ function App() {
               >
                 Prediccion
               </NavLink>
+
               <NavLink
                 to="/models"
                 className={({ isActive }) =>
@@ -56,11 +64,16 @@ function App() {
               </NavLink>
             </div>
           </nav>
+
+          {/* Zona principal donde se renderiza la página que corresponda a la ruta actual. */}
           <main className="app-main">
             <Routes>
               <Route path="/" element={<DashboardPage />} />
+
               <Route path="/historico" element={<HistoricalPage />} />
+
               <Route path="/forecast" element={<ForecastPage />} />
+
               <Route path="/models" element={<ModelsPage />} />
             </Routes>
           </main>

@@ -11,20 +11,22 @@ XGBOOST_MULTISTEP_MINIMAL_PATH = PROJECT_ROOT / "models/xgboost/xgboost_multiste
 XGBOOST_MULTISTEP_COMPLETE_PATH = PROJECT_ROOT / "models/xgboost/xgboost_multistep_complete.pkl"
 
 
-def _load_model(path: Path):
+# Funciones para cargar modelos XGBoost desde archivos .pkl
+
+def _load_model(path: Path): # Verificar que el archivo existe antes de cargarlo
     if not path.exists():
         raise FileNotFoundError(f"XGBoost model file not found: {path}")
     return joblib.load(path)
 
 
-def load_xgboost_model():
+def load_xgboost_model(): # Cargar el modelo XGBoost one_step
     print("Loading model from:", settings.XGBOOST_MODEL_PATH)
     return joblib.load(settings.XGBOOST_MODEL_PATH)
 
-
+#Cargar el modelo minimo mulsti-step
 def load_xgboost_multistep_minimal_model():
     return _load_model(XGBOOST_MULTISTEP_MINIMAL_PATH)
 
-
+#Cargar el modelo completo multi-step
 def load_xgboost_multistep_complete_model():
     return _load_model(XGBOOST_MULTISTEP_COMPLETE_PATH)

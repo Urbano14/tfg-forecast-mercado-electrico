@@ -5,7 +5,7 @@ import pandas as pd
 from app.core.database import SessionLocal
 from app.infrastructure.db.models import MarketData
 
-
+# Carga los datos del dataset en la tabla market_data de la base de datos.
 def main():
     data_path = Path(__file__).resolve().parents[2] / "data" / "processed" / "spot_es_with_exogenous.parquet"
     df = pd.read_parquet(data_path)

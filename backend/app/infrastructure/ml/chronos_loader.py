@@ -7,6 +7,8 @@ from autogluon.timeseries import TimeSeriesPredictor
 
 from app.core.config import settings
 
+# Archivo para cargar el modelo de Chronos, con un parche para evitar problemas de compatibilidad entre Windows y Linux al usar pathlib. 
+# El modelo se carga una sola vez 
 
 def _patch_windows_path_for_linux() -> None:
     if os.name != "nt":
@@ -14,8 +16,9 @@ def _patch_windows_path_for_linux() -> None:
 
 
 @lru_cache(maxsize=1)
-def load_chronos_predictor() -> TimeSeriesPredictor:
 
+def load_chronos_predictor() -> TimeSeriesPredictor: 
+#
     _patch_windows_path_for_linux()
 
     model_path = Path(settings.CHRONOS_MODEL_PATH).resolve()

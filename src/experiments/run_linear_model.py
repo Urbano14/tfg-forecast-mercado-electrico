@@ -26,10 +26,10 @@ def split_featured_data(df_feat: pd.DataFrame):
         test.reset_index(drop=True),
     )
 
-
+# Evalua el modelo en un conjunto concreto, por ejemplo validación o test.
 def evaluate_one_split(model: LinearRegressionModel, df_split: pd.DataFrame, split_name: str):
     y_true = df_split["price"]
-    y_pred = model.predict(df_split)
+    y_pred = model.predict(df_split) 
 
     result = {
         "dataset": split_name,
@@ -56,9 +56,12 @@ def main():
     train, val, test = split_featured_data(df_feat)
 
     model = LinearRegressionModel()
-    model.fit(train)
+    model.fit(train) #Aqui si entrena, no como en el modelo de baseline que no tiene entrenamiento.
 
     results = []
+    #Aquí validacion hace lo mismo que test, no sirve para nada, pero lo dejo para que se vea el proceso completo. 
+    # En un modelo más complejo, la validación se usaría para ajustar hiperparámetros o tomar decisiones de modelado,
+    #mientras que el test se usaría solo para evaluar el rendimiento final.
     results.append(evaluate_one_split(model, val, "validation"))
     results.append(evaluate_one_split(model, test, "test"))
 

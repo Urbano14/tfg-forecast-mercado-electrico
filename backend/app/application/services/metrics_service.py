@@ -1,5 +1,7 @@
 from app.application.services.model_service import get_available_models
 
+# Devuelve métricas ya fijadas a partir de los resultados experimentales.
+
 METRICS_BY_MODEL = {
     "seasonal_naive": {
         "mae": 18.2531,
@@ -15,7 +17,7 @@ METRICS_BY_MODEL = {
     },
 }
 
-
+# Devuelve las métricas de cada modelo disponible, si es que se han fijado.
 def get_model_metrics():
     metrics = []
 

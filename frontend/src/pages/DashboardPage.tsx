@@ -1,3 +1,5 @@
+// Pagina principal del dashboard con resumen de indicadores clave y accesos rapidos a secciones principales
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchHistoricalRange } from "../api/historicalApi";
@@ -7,30 +9,43 @@ import { APP_TIMEZONE, formatDate } from "../utils/date";
 import { formatNumber } from "../utils/number";
 
 function DashboardPage() {
+  // Guarda el rango temporal disponible en la base de datos.
   const [range, setRange] = useState<{ start: string; end: string } | null>(null);
+
+  // Lista de modelos disponibles que devuelve el endpoint /models.
   const [models, setModels] = useState<ModelInfo[]>([]);
+
+  // Métricas visibles de los modelos que devuelve el endpoint /metrics.
   const [metrics, setMetrics] = useState<ModelMetric[]>([]);
+
+  // Estado de carga para mostrar guiones o mensajes mientras llegan los datos.
   const [loading, setLoading] = useState(true);
+
+  // Mensaje de error si alguna llamada al backend falla.
   const [error, setError] = useState<string | null>(null);
 
+  // Al cargar el dashboard, se piden al backend los datos necesarios para el resumen.
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
         setError(null);
 
+        // Ejecuta las tres peticiones en paralelo para no esperar una detrás de otra.
         const [rangeResponse, modelsResponse, metricsResponse] = await Promise.all([
           fetchHistoricalRange(),
           fetchModels(),
           fetchMetrics(),
         ]);
 
+        // Guarda las respuestas en el estado para que React vuelva a pintar la página.
         setRange(rangeResponse);
         setModels(modelsResponse.models);
         setMetrics(metricsResponse.metrics);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
+        // Termina la carga tanto si todo ha ido bien como si ha fallado.
         setLoading(false);
       }
     }
@@ -38,10 +53,12 @@ function DashboardPage() {
     loadData();
   }, []);
 
+  // Crea un mapa id -> modelo para poder recuperar el nombre visible de cada modelo.
   const modelById = useMemo(() => {
     return new Map(models.map((model) => [model.id, model]));
   }, [models]);
 
+  // Busca el modelo con menor MAE entre las métricas cargadas.
   const bestMaeMetric = useMemo<ModelMetric | null>(() => {
     let best: ModelMetric | null = null;
     metrics.forEach((metric) => {
@@ -56,6 +73,7 @@ function DashboardPage() {
     return best;
   }, [metrics]);
 
+  // Busca el modelo con menor RMSE entre las métricas cargadas.
   const bestRmseMetric = useMemo<ModelMetric | null>(() => {
     let best: ModelMetric | null = null;
     metrics.forEach((metric) => {
@@ -70,6 +88,7 @@ function DashboardPage() {
     return best;
   }, [metrics]);
 
+  // Obtiene el nombre visible del modelo con mejor MAE y RMSE.
   const bestMaeName =
     (bestMaeMetric && modelById.get(bestMaeMetric.id)?.name) ?? bestMaeMetric?.id ?? "-";
   const bestRmseName =
@@ -80,6 +99,7 @@ function DashboardPage() {
 
   return (
     <div className="page">
+      {/* Cabecera principal del dashboard con descripción, rango y accesos principales. */}
       <section className="hero">
         <div>
           <p className="hero__eyebrow">TFG Energia</p>
@@ -108,6 +128,7 @@ function DashboardPage() {
           </div>
         </div>
 
+        {/* Panel lateral con resumen rápido del estado de la aplicación. */}
         <div className="hero-panel">
           <div className="hero-panel__card">
             <p className="hero-panel__label">Modelos disponibles</p>
@@ -126,8 +147,10 @@ function DashboardPage() {
         </div>
       </section>
 
+      {/* Mensaje de error si alguna petición inicial al backend falla. */}
       {error && <p className="status status--error">Error al cargar resumen: {error}</p>}
 
+      {/* KPIs principales del sistema: mejores métricas y rango histórico. */}
       <section className="section">
         <div className="section__header">
           <h2>Indicadores clave</h2>
@@ -159,6 +182,7 @@ function DashboardPage() {
         </div>
       </section>
 
+      {/* Tarjetas para entrar rápidamente a los módulos principales. */}
       <section className="section">
         <div className="section__header">
           <h2>Accesos rapidos</h2>

@@ -1,5 +1,7 @@
+// Zona horaria usada en toda la interfaz para mostrar fechas de forma coherente.
 export const APP_TIMEZONE = "Europe/Madrid";
 
+// Formateador para mostrar solo fecha en formato: DD/MM/YYYY.
 const dateFormatter = new Intl.DateTimeFormat("es-ES", {
   timeZone: APP_TIMEZONE,
   year: "numeric",
@@ -7,6 +9,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-ES", {
   day: "2-digit",
 });
 
+// Formateador para mostrar fecha y hora en formato: DD/MM/YYYY HH:mm.
 const dateTimeFormatter = new Intl.DateTimeFormat("es-ES", {
   timeZone: APP_TIMEZONE,
   year: "numeric",
@@ -17,10 +20,12 @@ const dateTimeFormatter = new Intl.DateTimeFormat("es-ES", {
   hour12: false,
 });
 
+// Extrae una parte concreta de una fecha formateada, por ejemplo: day, month, year, hour o minute.
 function getPart(parts: Intl.DateTimeFormatPart[], type: string): string {
   return parts.find((part) => part.type === type)?.value ?? "";
 }
 
+// Convierte un string o Date a Date válido, si el valor no se puede interpretar como fecha, devuelve null malas visuales.
 function parseDateValue(value: string | Date): Date | null {
   const date = value instanceof Date ? value : new Date(value);
 
@@ -31,6 +36,7 @@ function parseDateValue(value: string | Date): Date | null {
   return date;
 }
 
+// Formatea una fecha para mostrarla como DD/MM/YYYY.
 export function formatDate(value: string | Date): string {
   const date = parseDateValue(value);
   if (!date) {
@@ -45,6 +51,7 @@ export function formatDate(value: string | Date): string {
   return `${day}/${month}/${year}`;
 }
 
+// Formatea un timestamp completo para mostrarlo como DD/MM/YYYY HH:mm.
 export function formatTimestamp(value: string | Date): string {
   const date = parseDateValue(value);
   if (!date) {
@@ -61,6 +68,7 @@ export function formatTimestamp(value: string | Date): string {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
+// Convierte una fecha recibida del backend al formato que necesita un input HTML de tipo date: YYYY-MM-DD.
 export function toDateInputValue(value: string): string {
   if (!value) {
     return "";
@@ -82,6 +90,7 @@ export function toDateInputValue(value: string): string {
   return parsed.toISOString().slice(0, 10);
 }
 
+// Formatea un valor de input datetime-local para mostrarlo en un texto legible.
 export function formatLocalDateTimeInput(value: string): string {
   if (!value) {
     return "";

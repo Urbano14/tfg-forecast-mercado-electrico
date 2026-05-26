@@ -1,6 +1,8 @@
 from pathlib import Path
 import pandas as pd
-#Este script fusiona el dataset de precios con el dataset exógeno, usando la columna "timestamp" como clave de unión. El resultado se guarda en formato parquet y csv para su uso posterior.
+#Este script fusiona el dataset de precios con el dataset exógeno, 
+# usando la columna "timestamp" como clave de unión. 
+# El resultado se guarda en formato parquet y csv.
 
 PRICE_PATH = Path("data/processed/spot_es_processed.parquet")
 EXOG_PATH = Path("data/raw/exogenous/exogenous_merged.parquet")
@@ -11,14 +13,14 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 OUT_PARQUET = OUT_DIR / "spot_es_with_exogenous.parquet"
 OUT_CSV = OUT_DIR / "spot_es_with_exogenous.csv"
 
-
+# Carga el dataset de precios.
 def load_price() -> pd.DataFrame:
     df = pd.read_parquet(PRICE_PATH)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True).dt.tz_convert("Europe/Madrid")
     df = df.sort_values("timestamp").reset_index(drop=True)
     return df
 
-
+# Carga el dataset exógeno.
 def load_exogenous() -> pd.DataFrame:
     df = pd.read_parquet(EXOG_PATH)
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
