@@ -4,12 +4,12 @@ from app.application.services.model_service import get_available_models
 
 METRICS_BY_MODEL = {
     "seasonal_naive": {
-        "mae": 18.2531,
-        "rmse": 27.6373,
+        "mae": 19.0937,
+        "rmse": 28.0507,
     },
     "xgboost": {
-        "mae": 14.3392,
-        "rmse": 18.9978,
+        "mae": 17.0440,
+        "rmse": 22.4152,
     },
     "chronos": {
         "mae": 11.6566,
