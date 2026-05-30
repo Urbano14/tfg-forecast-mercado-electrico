@@ -16,7 +16,7 @@ CHUNK_DAYS = 30
 
 # Mismo rango temporal que el precio
 DEFAULT_START = "2020-01-01T00:00"
-DEFAULT_END = "2024-12-31T23:59"
+DEFAULT_END = "2026-05-01T23:59"
 
 
 # 460  -> Previsión diaria de la demanda eléctrica peninsular

@@ -1,0 +1,14 @@
+{
+  "mae_global": 11.229475480899811,
+  "rmse_global": 15.827470782079986,
+  "horizon": 24,
+  "n_samples": 500,
+  "n_predictions": 12000,
+  "split": "val",
+  "max_windows": 500,
+  "n_candidate_windows": 8783,
+  "n_windows_ok": 500,
+  "n_windows_failed": 0,
+  "start_timestamp": "2024-01-01 00:00:00+01:00",
+  "end_timestamp": "2024-01-22 18:00:00+01:00"
+}

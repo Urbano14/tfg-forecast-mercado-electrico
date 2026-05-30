@@ -1,19 +1,10 @@
 {
-  "variant": "minimal",
-  "study_name": "xgboost_multistep_minimal",
-  "status": "manually_saved_from_interrupted_optuna_run",
-  "n_completed_trials": 21,
-  "best_trial": 12,
-  "best_value": 16.135527320306192,
-  "metric": "validation_mae_global_24h",
-  "best_params": {
-    "n_estimators": 487,
-    "max_depth": 4,
-    "learning_rate": 0.050585607675860775,
-    "subsample": 0.867367912942821,
-    "colsample_bytree": 0.9998394104051604,
-    "min_child_weight": 8,
-    "reg_alpha": 0.7051606470416014,
-    "reg_lambda": 3.6527198983297455
-  }
+  "n_estimators": 66,
+  "max_depth": 6,
+  "learning_rate": 0.11473010830383572,
+  "subsample": 0.7965885453902046,
+  "colsample_bytree": 0.7635140574350565,
+  "min_child_weight": 1,
+  "reg_alpha": 0.9915650872829869,
+  "reg_lambda": 4.1880162463366135
 }

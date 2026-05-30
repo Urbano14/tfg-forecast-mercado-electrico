@@ -1,0 +1,14 @@
+{
+  "mae_global": 10.67386842462648,
+  "rmse_global": 15.615837139919506,
+  "horizon": 24,
+  "n_samples": 11434,
+  "n_predictions": 274416,
+  "split": "test",
+  "max_windows": null,
+  "n_candidate_windows": 11554,
+  "n_windows_ok": 11434,
+  "n_windows_failed": 120,
+  "start_timestamp": "2025-01-01 00:00:00+01:00",
+  "end_timestamp": "2026-05-01 23:00:00+02:00"
+}

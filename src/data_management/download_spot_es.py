@@ -21,7 +21,7 @@ OUTPUT_CSV = RAW_DIR / f"esios_{INDICATOR_ID}_spot_diario_ES.csv"
 CHUNK_DAYS = 30 
 
 DEFAULT_START = "2020-01-01T00:00"
-DEFAULT_END = "2024-12-31T23:59"
+DEFAULT_END = "2026-05-01T23:59"
 
 #Llama a la API de ESIOS para descargar datos del indicador 600(precio spot diario)
 def esios_get(token: str, params: dict) -> dict: 
@@ -102,8 +102,19 @@ def main():
         cur = chunk_end
     #Une todos los chunks descargados en un solo DataFrame, eliminando duplicados y ordenando por timestamp.
 
-    df = df.drop_duplicates(subset=["timestamp_utc"]).sort_values("timestamp_utc").reset_index(drop=True)
+    # Une todos los chunks descargados en un solo DataFrame.
+    if not all_chunks:
+        raise RuntimeError("No se ha descargado ningún chunk desde ESIOS.")
 
+    df = pd.concat(all_chunks, ignore_index=True)
+
+    # Elimina duplicados y ordena cronológicamente por timestamp UTC.
+    df = (
+        df.drop_duplicates(subset=["timestamp_utc"])
+        .sort_values("timestamp_utc")
+        .reset_index(drop=True)
+    )
+    
     # Guardar el DataFrame final en formato Parquet y CSV.
     df.to_parquet(OUTPUT_PARQUET, index=False)
     df.to_csv(OUTPUT_CSV, index=False)

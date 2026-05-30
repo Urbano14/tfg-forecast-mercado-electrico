@@ -12,8 +12,8 @@ METRICS_BY_MODEL = {
         "rmse": 22.4152,
     },
     "chronos": {
-        "mae": 11.6566,
-        "rmse": 14.4666,
+        "mae": 10.6739,
+        "rmse": 15.6158,
     },
 }
 

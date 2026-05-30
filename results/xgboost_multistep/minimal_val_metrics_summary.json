@@ -1,6 +1,6 @@
 {
-  "mae_global": 11.948616307889502,
-  "rmse_global": 16.766601668698787,
+  "mae_global": 15.534820644737156,
+  "rmse_global": 21.330442042135918,
   "horizon": 24,
-  "n_samples": 8760
+  "n_samples": 8784
 }

@@ -35,9 +35,9 @@ function ForecastPage() {
   // Seleccion del usuario: dos modelos, rango historico y fecha base de prediccion.
   const [selectedModelA, setSelectedModelA] = useState("seasonal_naive");
   const [selectedModelB, setSelectedModelB] = useState("seasonal_naive");
-  const [historicalStart, setHistoricalStart] = useState("2022-01-01");
-  const [historicalEnd, setHistoricalEnd] = useState("2022-01-04");
-  const [forecastBaseDate, setForecastBaseDate] = useState("2022-01-03");
+  const [historicalStart, setHistoricalStart] = useState("");
+  const [historicalEnd, setHistoricalEnd] = useState("");
+  const [forecastBaseDate, setForecastBaseDate] = useState("");
 
   // Indica si ya se ha cargado una prediccion valida.
   const [forecastLoaded, setForecastLoaded] = useState(false);
@@ -57,7 +57,6 @@ function ForecastPage() {
         setLoadingModels(true);
         setMetricsError(null);
 
-        // Promise.all lanza las tres peticiones a la vez para no esperar una detras de otra.
         const [rangeResponse, modelsResponse, metricsResponse] = await Promise.all([
           fetchHistoricalRange(),
           fetchModels(),
@@ -83,14 +82,27 @@ function ForecastPage() {
     return new Date(year, month - 1, day);
   }
 
-  // Suma dias a una fecha y devuelve de nuevo formato YYYY-MM-DD para inputs date.
-  function addDays(dateStr: string, days: number): string {
+  // Desplaza una fecha YYYY-MM-DD un numero concreto de dias y devuelve el mismo formato.
+  function shiftDate(dateStr: string, days: number): string {
     const date = parseDateOnly(dateStr);
     date.setDate(date.getDate() + days);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }
+
+  // Fuerza una fecha a permanecer dentro de un rango YYYY-MM-DD.
+  function clampDate(dateStr: string, minDate: string, maxDate: string): string {
+    if (dateStr < minDate) {
+      return minDate;
+    }
+
+    if (dateStr > maxDate) {
+      return maxDate;
+    }
+
+    return dateStr;
   }
 
   // Calcula la diferencia en dias. Se usa para limitar el historico a maximo 5 dias.
@@ -121,45 +133,82 @@ function ForecastPage() {
     return "Error desconocido";
   }
 
-  // Convierte el rango disponible del backend al formato que entienden los inputs type=date.
+  // Convierte el rango disponible del backend al formato YYYY-MM-DD que entienden los inputs type=date.
   const availableMinDate = range ? toDateInputValue(range.start) : null;
   const availableMaxDate = range ? toDateInputValue(range.end) : null;
   const availableMinDateLabel = availableMinDate ? formatDate(availableMinDate) : null;
   const availableMaxDateLabel = availableMaxDate ? formatDate(availableMaxDate) : null;
-  // El historico no puede superar 5 dias ni ir mas alla del ultimo dato disponible.
-  const maxHistoricalEndDate =
-    availableMaxDate && availableMaxDate < addDays(historicalStart, 5)
-      ? availableMaxDate
-      : addDays(historicalStart, 5);
+  const forecastMaxDate =
+    availableMinDate && availableMaxDate
+      ? clampDate(shiftDate(availableMaxDate, -1), availableMinDate, availableMaxDate)
+      : null;
+
+  // Cuando llega el rango del backend, coloca las fechas por defecto cerca del final disponible.
+  useEffect(() => {
+    if (!availableMinDate || !availableMaxDate || !forecastMaxDate) {
+      return;
+    }
+
+    if (forecastBaseDate || historicalStart || historicalEnd) {
+      return;
+    }
+
+    const defaultForecastBaseDate = forecastMaxDate;
+    const defaultHistoricalEnd = defaultForecastBaseDate;
+    const defaultHistoricalStart = clampDate(
+      shiftDate(defaultHistoricalEnd, -3),
+      availableMinDate,
+      defaultHistoricalEnd
+    );
+
+    setForecastBaseDate(defaultForecastBaseDate);
+    setHistoricalStart(defaultHistoricalStart);
+    setHistoricalEnd(defaultHistoricalEnd);
+  }, [
+    availableMinDate,
+    availableMaxDate,
+    forecastMaxDate,
+    forecastBaseDate,
+    historicalStart,
+    historicalEnd,
+  ]);
 
   // Valida la configuracion antes de llamar al backend. Si devuelve null, todo es correcto.
   function validateForecastDates(): string | null {
+    if (!forecastBaseDate || !historicalStart || !historicalEnd) {
+      return "Selecciona fechas validas dentro del rango disponible.";
+    }
+
+    if (availableMinDate && forecastBaseDate < availableMinDate) {
+      return "La fecha base de prediccion no puede ser anterior al primer dato disponible.";
+    }
+
+    if (forecastMaxDate && forecastBaseDate > forecastMaxDate) {
+      return "La fecha base de prediccion no puede ser posterior al ultimo dia compatible con el forecast.";
+    }
+
     if (availableMinDate && historicalStart < availableMinDate) {
-      return "El inicio del histórico no puede ser anterior al primer dato disponible.";
+      return "El inicio del historico no puede ser anterior al primer dato disponible.";
+    }
+
+    if (availableMaxDate && historicalStart > availableMaxDate) {
+      return "El inicio del historico no puede ser posterior al ultimo dato disponible.";
+    }
+
+    if (availableMinDate && historicalEnd < availableMinDate) {
+      return "El fin del historico no puede ser anterior al primer dato disponible.";
     }
 
     if (availableMaxDate && historicalEnd > availableMaxDate) {
-      return "El fin del histórico no puede ser posterior al último dato disponible.";
+      return "El fin del historico no puede ser posterior al ultimo dato disponible.";
     }
 
     if (historicalStart > historicalEnd) {
-      return "La fecha de inicio del histórico no puede ser posterior a la fecha de fin.";
+      return "La fecha de inicio del historico no puede ser posterior a la fecha de fin.";
     }
 
     if (diffDays(historicalStart, historicalEnd) > 5) {
-      return "El rango histórico no puede superar los 5 días.";
-    }
-
-    if (forecastBaseDate < historicalStart) {
-      return "La fecha base de predicción no puede ser anterior al inicio del histórico.";
-    }
-
-    if (forecastBaseDate > historicalEnd) {
-      return "La fecha a predecir no puede ser posterior al fin del histórico.";
-    }
-
-    if (availableMaxDate && forecastBaseDate > availableMaxDate) {
-      return "La fecha base de predicción no puede ser posterior al último dato disponible.";
+      return "El rango historico no puede superar los 5 dias.";
     }
 
     return null;
@@ -177,20 +226,16 @@ function ForecastPage() {
       setForecastError(null);
       setHistoricalError(null);
       setForecastLoading(true);
-      // El backend espera una fecha con hora. Para el input date se usa la hora 00:00.
       const baseDateIso = `${forecastBaseDate}T00:00:00`;
-      // Primera llamada: forecast del Modelo A.
       const responseA = await fetchForecast(baseDateIso, selectedModelA);
       const forecastForA = responseA.forecast;
 
-      // Si ambos modelos son iguales, se reutiliza la prediccion A y se evita una llamada duplicada.
       let forecastForB: ForecastPoint[] = forecastForA;
       if (selectedModelB !== selectedModelA) {
         const responseB = await fetchForecast(baseDateIso, selectedModelB);
         forecastForB = responseB.forecast;
       }
 
-      // Guarda predicciones y recuerda la configuracion exacta con la que se cargaron.
       setForecastA(forecastForA);
       setForecastB(forecastForB);
       setForecastLoaded(true);
@@ -202,7 +247,6 @@ function ForecastPage() {
         historicalEnd,
       });
 
-      // Despues del forecast, carga el historico seleccionado para pintarlo como contexto.
       setHistoricalLoading(true);
       try {
         const historicalResponse = await fetchHistoricalData(
@@ -253,7 +297,6 @@ function ForecastPage() {
       { timestamp: string; price?: number; forecastA?: number; forecastB?: number }
     >();
 
-    // Primero inserta el precio historico.
     historicalData.forEach((row) => {
       byTimestamp.set(row.timestamp, {
         timestamp: row.timestamp,
@@ -261,7 +304,6 @@ function ForecastPage() {
       });
     });
 
-    // Despues añade la prediccion A al mismo timestamp si ya existe.
     forecastA.forEach((row) => {
       const existing = byTimestamp.get(row.timestamp);
 
@@ -275,7 +317,6 @@ function ForecastPage() {
       }
     });
 
-    // Depues añade la prediccion B.
     forecastB.forEach((row) => {
       const existing = byTimestamp.get(row.timestamp);
 
@@ -289,7 +330,6 @@ function ForecastPage() {
       }
     });
 
-    // Recharts necesita los puntos ordenados cronologicamente.
     return Array.from(byTimestamp.values()).sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
@@ -316,7 +356,6 @@ function ForecastPage() {
         </div>
       </header>
 
-      {/* Bloque principal de configuracion: modelos, fechas y boton de carga. */}
       <section className="card">
         <div className="card__header">
           <h2>Configuracion de prediccion</h2>
@@ -364,12 +403,12 @@ function ForecastPage() {
           </label>
 
           <label className="field">
-            <span>Fecha base de predicción</span>
+            <span>Fecha base de prediccion</span>
             <input
               type="date"
               value={forecastBaseDate}
-              min={historicalStart}
-              max={historicalEnd}
+              min={availableMinDate ?? undefined}
+              max={forecastMaxDate ?? undefined}
               onChange={(e) => {
                 setForecastBaseDate(e.target.value);
                 setForecastLoaded(false);
@@ -384,7 +423,7 @@ function ForecastPage() {
               type="date"
               value={historicalStart}
               min={availableMinDate ?? undefined}
-              max={historicalEnd}
+              max={historicalEnd || availableMaxDate || undefined}
               onChange={(e) => {
                 setHistoricalStart(e.target.value);
                 setForecastLoaded(false);
@@ -398,8 +437,8 @@ function ForecastPage() {
             <input
               type="date"
               value={historicalEnd}
-              min={historicalStart}
-              max={maxHistoricalEndDate}
+              min={historicalStart || availableMinDate || undefined}
+              max={availableMaxDate ?? undefined}
               onChange={(e) => {
                 setHistoricalEnd(e.target.value);
                 setForecastLoaded(false);
@@ -453,7 +492,6 @@ function ForecastPage() {
         )}
       </section>
 
-      {/* Bloque de metricas: muestra MAE/RMSE de los modelos seleccionados. */}
       <section className="card">
         <div className="card__header">
           <h2>Metricas por modelo</h2>
@@ -478,7 +516,10 @@ function ForecastPage() {
                 {selectedModelInfoA?.name ?? selectedModelA}
               </h3>
               <p className="metrics-card__meta">
-                Tipo: {modelTypeLabels[selectedModelInfoA?.type ?? ""] ?? selectedModelInfoA?.type ?? "-"}
+                Tipo:{" "}
+                {modelTypeLabels[selectedModelInfoA?.type ?? ""] ??
+                  selectedModelInfoA?.type ??
+                  "-"}
               </p>
               <div className="metrics-list">
                 <div className="metrics-list__item">
@@ -502,7 +543,10 @@ function ForecastPage() {
                 {selectedModelInfoB?.name ?? selectedModelB}
               </h3>
               <p className="metrics-card__meta">
-                Tipo: {modelTypeLabels[selectedModelInfoB?.type ?? ""] ?? selectedModelInfoB?.type ?? "-"}
+                Tipo:{" "}
+                {modelTypeLabels[selectedModelInfoB?.type ?? ""] ??
+                  selectedModelInfoB?.type ??
+                  "-"}
               </p>
               <div className="metrics-list">
                 <div className="metrics-list__item">
@@ -523,7 +567,6 @@ function ForecastPage() {
         )}
       </section>
 
-      {/* Bloque de grafica: pinta historico + prediccion A + prediccion B. */}
       <section className="card">
         <div className="card__header">
           <h2>Grafica de prediccion</h2>

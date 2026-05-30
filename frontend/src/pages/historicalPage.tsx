@@ -17,12 +17,9 @@ import {
 import { formatNumber } from "../utils/number";
 
 function HistoricalPage() {
-  // Rango inicial que se carga al abrir la pagina de historico.
-  const initialStart = "2022-01-01";
-  const initialEnd = "2022-01-04";
-
   // Numero maximo de filas visibles en la tabla para no saturar la interfaz.
   const TABLE_LIMIT = 50;
+  const MAX_HISTORICAL_DAYS = 5;
 
   // Rango total disponible en backend/base de datos.
   const [range, setRange] = useState<{ start: string; end: string } | null>(null);
@@ -42,8 +39,44 @@ function HistoricalPage() {
   const [tableQuery, setTableQuery] = useState("");
 
   // Fechas seleccionadas en los inputs de fecha.
-  const [start, setStart] = useState(initialStart);
-  const [end, setEnd] = useState(initialEnd);
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+
+  // Convierte una fecha YYYY-MM-DD en Date sin depender del parseo automatico del navegador.
+  function parseDateOnly(dateStr: string): Date {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  // Desplaza una fecha YYYY-MM-DD un numero concreto de dias y devuelve el mismo formato.
+  function shiftDate(dateStr: string, days: number): string {
+    const date = parseDateOnly(dateStr);
+    date.setDate(date.getDate() + days);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  // Fuerza una fecha a permanecer dentro de un rango YYYY-MM-DD.
+  function clampDate(dateStr: string, minDate: string, maxDate: string): string {
+    if (dateStr < minDate) {
+      return minDate;
+    }
+
+    if (dateStr > maxDate) {
+      return maxDate;
+    }
+
+    return dateStr;
+  }
+
+  // Calcula la diferencia en dias para limitar el rango historico.
+  function diffDays(startDateStr: string, endDateStr: string): number {
+    const startDate = parseDateOnly(startDateStr);
+    const endDate = parseDateOnly(endDateStr);
+    return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  }
 
   // Funcion reutilizable para cargar datos historicos desde el backend.
   // Recibe fecha de inicio y fin, llama a /historical y guarda la respuesta en el estado data.
@@ -61,14 +94,32 @@ function HistoricalPage() {
     }
   }, []);
 
+  const availableMinDate = range ? toDateInputValue(range.start) : null;
+  const availableMaxDate = range ? toDateInputValue(range.end) : null;
+  const maxEndDate =
+    availableMinDate && availableMaxDate && start
+      ? clampDate(shiftDate(start, MAX_HISTORICAL_DAYS), availableMinDate, availableMaxDate)
+      : availableMaxDate;
+
   // Al montar la pagina, primero se carga el rango disponible y despues un historico inicial.
   useEffect(() => {
     async function initializePage() {
       try {
         const rangeData = await fetchHistoricalRange();
         setRange(rangeData);
+        const minDate = toDateInputValue(rangeData.start);
+        const maxDate = toDateInputValue(rangeData.end);
+        const defaultEnd = maxDate;
+        const defaultStart = clampDate(
+          shiftDate(defaultEnd, -MAX_HISTORICAL_DAYS),
+          minDate,
+          defaultEnd
+        );
 
-        await loadHistoricalData(initialStart, initialEnd);
+        setStart(defaultStart);
+        setEnd(defaultEnd);
+
+        await loadHistoricalData(defaultStart, defaultEnd);
       } catch (err) {
         setHistoricalError(err instanceof Error ? err.message : "Error desconocido");
         setLoading(false);
@@ -82,6 +133,11 @@ function HistoricalPage() {
   // Valida fechas en frontend antes de llamar al backend.
   function handleLoadClick() {
     setValidationError(null);
+
+    if (!start || !end) {
+      setValidationError("Selecciona un rango historico valido dentro del rango disponible.");
+      return;
+    }
 
     // En formato YYYY-MM-DD se pueden comparar strings para comprobar orden temporal.
     if (start > end) {
@@ -107,7 +163,55 @@ function HistoricalPage() {
       }
     }
 
+    if (diffDays(start, end) > MAX_HISTORICAL_DAYS) {
+      setValidationError(
+        `El rango historico esta limitado a ${MAX_HISTORICAL_DAYS} dias para evitar cargas demasiado grandes.`
+      );
+      return;
+    }
+
     loadHistoricalData(start, end);
+  }
+
+  function handleStartChange(nextStart: string) {
+    setValidationError(null);
+    setStart(nextStart);
+
+    if (!range) {
+      return;
+    }
+
+    const minDate = toDateInputValue(range.start);
+    const maxDate = toDateInputValue(range.end);
+    const allowedEnd = clampDate(
+      shiftDate(nextStart, MAX_HISTORICAL_DAYS),
+      minDate,
+      maxDate
+    );
+
+    if (!end || end < nextStart || diffDays(nextStart, end) > MAX_HISTORICAL_DAYS) {
+      setEnd(allowedEnd);
+    }
+  }
+
+  function handleEndChange(nextEnd: string) {
+    setValidationError(null);
+    setEnd(nextEnd);
+
+    if (!range) {
+      return;
+    }
+
+    const minDate = toDateInputValue(range.start);
+    const adjustedStart = clampDate(
+      shiftDate(nextEnd, -MAX_HISTORICAL_DAYS),
+      minDate,
+      nextEnd
+    );
+
+    if (!start || start > nextEnd || diffDays(start, nextEnd) > MAX_HISTORICAL_DAYS) {
+      setStart(adjustedStart);
+    }
   }
 
   // Adapta los datos historicos al formato que espera PriceChart.
@@ -187,12 +291,9 @@ function HistoricalPage() {
               type="date"
               value={start}
               // min y max evitan seleccionar fechas fuera del rango disponible.
-              min={range ? toDateInputValue(range.start) : undefined}
-              max={range ? toDateInputValue(range.end) : undefined}
-              onChange={(e) => {
-                setStart(e.target.value);
-                setValidationError(null);
-              }}
+              min={availableMinDate ?? undefined}
+              max={end || availableMaxDate || undefined}
+              onChange={(e) => handleStartChange(e.target.value)}
             />
             <span className="field__hint">Seleccionada: {formatDate(start)}</span>
           </label>
@@ -202,18 +303,17 @@ function HistoricalPage() {
             <input
               type="date"
               value={end}
-              min={range ? toDateInputValue(range.start) : undefined}
-              max={range ? toDateInputValue(range.end) : undefined}
-              onChange={(e) => {
-                setEnd(e.target.value);
-                setValidationError(null);
-              }}
+              min={start || availableMinDate || undefined}
+              max={maxEndDate ?? undefined}
+              onChange={(e) => handleEndChange(e.target.value)}
             />
             <span className="field__hint">Seleccionada: {formatDate(end)}</span>
           </label>
 
           <div className="field field--actions">
-            <span className="field__hint">Carga el historico para el rango indicado.</span>
+            <span className="field__hint">
+              El rango historico esta limitado a 5 dias para evitar cargas demasiado grandes.
+            </span>
             <button className="btn btn--primary" onClick={handleLoadClick}>
               Cargar historico
             </button>

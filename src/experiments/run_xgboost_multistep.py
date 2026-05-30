@@ -25,12 +25,12 @@ RESULTS_DIR = Path("results/xgboost_multistep")
 RANDOM_STATE = 42
 N_OPTUNA_TRIALS = 20  # 50 tardaban mucho.
 
-# Por defecto no se reentrena XGBoost ni se vuelve a ejecutar Optuna.
-# Cambiar a True solo cuando se quieran regenerar los .pkl y las métricas finales.
-RUN_FULL_XGBOOST_PIPELINE = False
+# Ejecuta el reentrenamiento completo de XGBoost y la optimización con Optuna.
+# Mantener a True para regenerar los .pkl y las métricas finales con el dataset ampliado hasta 2026.
+RUN_FULL_XGBOOST_PIPELINE = True
 
 BASE_XGBOOST_PARAMS = {
-    "n_estimators": 300,
+    "n_estimators": 100,
     "max_depth": 6,
     "learning_rate": 0.05,
     "subsample": 0.8,
@@ -76,8 +76,9 @@ def train_model(
 
 def suggest_xgboost_params(trial: optuna.Trial) -> dict:
     # Define el espacio de búsqueda de Optuna para los hiperparámetros de XGBoost.
+    # Se limita n_estimators para que la optimización siga siendo viable con el dataset ampliado hasta 2026.
     return {
-        "n_estimators": trial.suggest_int("n_estimators", 100, 600),
+        "n_estimators": trial.suggest_int("n_estimators", 20, 100),
         "max_depth": trial.suggest_int("max_depth", 2, 8),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
         "subsample": trial.suggest_float("subsample", 0.6, 1.0),
@@ -190,15 +191,15 @@ def optimize_xgboost(
     return study
 
 
-# Divide X, y y timestamps por años: train hasta 2022, validación 2023 y test 2024.
+# Divide X, y y timestamps por años: train hasta 2023, validación 2024 y test 2025-2026.
 def temporal_split(
     X: np.ndarray,
     y: np.ndarray,
     timestamps: pd.DatetimeIndex,
 ) -> Splits:
-    train_mask = timestamps.year <= 2022
-    val_mask = timestamps.year == 2023
-    test_mask = timestamps.year == 2024
+    train_mask = timestamps.year <= 2023
+    val_mask = timestamps.year == 2024
+    test_mask = timestamps.year >= 2025
 
     return {
         "train": (X[train_mask], y[train_mask], timestamps[train_mask]),
@@ -298,7 +299,8 @@ def split_window_variants(variants: dict[str, WindowData]) -> dict[str, Splits]:
     }
 
 
-# Comprueba que cada split tenga dimensiones correctas y años correctos.
+# Comprueba que cada split tenga dimensiones correctas y el reparto temporal esperado:
+# train hasta 2023, validación 2024 y test 2025-2026.
 def validate_splits(all_splits: dict[str, Splits]) -> None:
     for splits in all_splits.values():
         for split_name, (X_split, y_split, ts_split) in splits.items():
@@ -306,11 +308,11 @@ def validate_splits(all_splits: dict[str, Splits]) -> None:
             assert y_split.shape[1] == DEFAULT_HORIZON
 
             if split_name == "train":
-                assert (ts_split.year <= 2022).all()
+                assert (ts_split.year <= 2023).all()
             elif split_name == "val":
-                assert (ts_split.year == 2023).all()
-            elif split_name == "test":
                 assert (ts_split.year == 2024).all()
+            elif split_name == "test":
+                assert (ts_split.year >= 2025).all()
 
 
 # Muestra por pantalla el tamaño de las variantes preparadas.
